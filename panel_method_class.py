@@ -531,18 +531,6 @@ def additional_right_hand_side(body_panels, wake_panels, C):
             
             id_j = panel_j.id
             RHS[id_i] = RHS[id_i] - panel_j.mu * C[id_i][id_j]
-            
-    
-    # Nb, _ = C.shape
-    # RHS = np.zeros(Nb)
-    
-    # # loop all over body panels' control points
-    # for id_i in range(Nb):
-        
-    #     # loop all over wake panels 
-    #     for panel_j in wake_panels:
-    #         id_j = panel_j.id
-    #         RHS[id_i] = RHS[id_j] - panel_j.mu * C[id_i][id_j]
     
     return RHS
 
@@ -595,36 +583,6 @@ def panel_velocity(panel, panel_neighbours, V_fs):
 
 def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
                           is_neighbour_2=True, is_neighbour_3=True, is_neighbour_4=True):
-    
-    """
-    this function computes the surface velocity, following the notation of NASA Contractor Report 4023 "Program VSAERO theory Document,
-    A Computer Program for Calculating Nonlinear Aerodynamic Characteristics
-    of Arbitrary Configurations, Brian Maskew"
-    
-    check pages 48-50 and 23-25
-    """
-    
-    # if is_neighbour_1 and is_neighbour_3:
-    #     neighbour_1 = panel_neighbours[0]
-    #     neighbour_3 = panel_neighbours[2]
-    #     SMQ_k, SMQ_n1, SMQ_n3 = panel.SMQ, neighbour_1.SMQ, neighbour_3.SMQ
-    #     SA = - (SMQ_k + SMQ_n1)
-    #     SB = SMQ_k + SMQ_n3
-    #     DA = (neighbour_1.mu - panel.mu)/SA
-    #     DB = (neighbour_3.mu - panel.mu)/SB
-        
-    #     DELQ = (DA * SB - DB * SA)/(SB - SA)
-    
-    # if is_neighbour_2 and is_neighbour_4:
-    #     neighbour_2, neighbour_4 = panel_neighbours[1], panel_neighbours[3]
-    #     SMP_k, SMP_n2, SMP_n4 = panel.SMP, neighbour_2.SMP, neighbour_4.SMP
-        
-    #     SA = - (SMP_k + SMP_n4)
-    #     SB = SMP_k + SMP_n2
-    #     DA = (neighbour_4.mu - panel.mu)/SA
-    #     DB = (neighbour_2.mu - panel.mu)/SB
-        
-    #     DELP = (DA * SB - DB * SA)/(SB - SA)
     
           
     if is_neighbour_1 and is_neighbour_3:
