@@ -1,6 +1,6 @@
 import numpy as np
 from vector_class import Vector
-from panel_method_class import PanelMethod, Steady_Wakeless_PanelMethod, Steady_PanelMethod
+from panel_method_class import PanelMethod, Steady_Wakeless_PanelMethod
 from matplotlib import pyplot as plt
 from plot_functions import plot_Cp_SurfaceContours
 from mesh_class import PanelMesh, Mesh
@@ -27,17 +27,17 @@ saved_ids = []
 for panel in mesh.panels:
     if abs(panel.r_cp.z) <= 10**(-3):
         saved_ids.append(panel.id)
-'''
+
 r = 1 # sphere radius
 x0, y0 = 0, 0 # center of sphere
-# analytical_theta = np.linspace(-np.pi, np.pi, 200)
-# analytical_cp = 1 - (3/2*np.sin(analytical_theta))**2
+analytical_theta = np.linspace(-np.pi, np.pi, 200)
+analytical_cp = 1 - (3/2*np.sin(analytical_theta))**2
 fig = plt.figure()
-# plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'b-',
-#            label='Analytical - sphere')
-# analytical_cp = 1 - 4 * np.sin(analytical_theta)**2
-# plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'g-',
-#            label='Analytical - cylinder')
+plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'b-',
+           label='Analytical - sphere')
+analytical_cp = 1 - 4 * np.sin(analytical_theta)**2
+plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'g-',
+           label='Analytical - cylinder')
 
 thetas = []
 Cp = []
@@ -55,6 +55,6 @@ plt.title("Cp distribution along the great circle of a sphere")
 plt.legend()
 plt.grid()
 plt.show()
-'''
+
 # Surface Contour plot
 plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)
