@@ -1,6 +1,6 @@
 import numpy as np
 from vector_class import Vector
-from influence_coefficient_functions import influence_coeff
+from influence_coefficient_functions import influence_coeff,source_velocity,doublet_velocity
 from mesh_class import PanelMesh
 from Algorithms import LeastSquares
 
@@ -48,6 +48,33 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             
             panel_neighbours = mesh.give_neighbours(panel)
             panel.Velocity = panel_velocity(panel, panel_neighbours, self.V_fs)            
+            
+            # pressure coefficient calculation
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+
+    def solve_new(self, mesh:PanelMesh):
+        
+        for panel in mesh.panels:
+            panel.sigma = source_strength(panel, self.V_fs) 
+        
+        B, C = self.influence_coeff_matrices(mesh.panels)
+        
+        RHS = right_hand_side(mesh.panels, B)
+        
+        doublet_strengths = np.linalg.solve(C, RHS)
+        
+        for panel_id, panel in enumerate(mesh.panels):
+            panel.mu = doublet_strengths[panel_id]
+        
+        
+        # compute Velocity and pressure coefficient at panels' control points
+        V_fs_norm = self.V_fs.norm()
+        
+        for panel in mesh.panels:
+            
+            # Velocity caclulation with least squares approach (faster)
+            
+            panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
             # pressure coefficient calculation
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
@@ -104,25 +131,8 @@ def right_hand_side(body_panels, B):
         
     return RHS
 
-def additional_right_hand_side(body_panels, wake_panels, C):
-    
-    Nb = len(body_panels)
-    RHS = np.zeros(Nb)
-    
-    # loop all over panels' control points
-    for panel_i in body_panels:
-        id_i = panel_i.id
-        
-        # loop all over wake panels
-        
-        for panel_j in wake_panels:
-            
-            id_j = panel_j.id
-            RHS[id_i] = RHS[id_i] - panel_j.mu * C[id_i][id_j]
-    
-    return RHS
-
-def panel_velocity(panel, panel_neighbours, V_fs):
+def panel_velocity(panel, panel_neighbours, V_fs): 
+    # 这里采用的是非精确速度求法，是近似计算，其实可以考虑仿照influence coeff求法求更精确点的
     
     n = len(panel_neighbours)
     A = np.zeros((n, 2))
@@ -145,6 +155,17 @@ def panel_velocity(panel, panel_neighbours, V_fs):
     V = V_fs + V_disturb
     
     return V
+
+def panel_velocity_new(p, mesh, V_fs): 
+    # 这里采用的是非精确速度求法，是近似计算，其实可以考虑仿照influence coeff求法求更精确点的
+    
+    V_disturb = Vector((0, 0, 0))
+
+    for panel in mesh.panels:
+        V_disturb += source_velocity(p.r_cp, panel)
+        V_disturb += doublet_velocity(p.r_cp, panel)
+
+    return V_fs + V_disturb
    
 if __name__ == "__main__":
     from mesh_class import PanelMesh
@@ -159,5 +180,6 @@ if __name__ == "__main__":
     V_fs = Vector((1, 0, 0))
     panel_method = Steady_Wakeless_PanelMethod(V_fs)
     panel_method.solve(mesh)
+    # print([panel.Cp for panel in mesh.panels])
     plot_Cp_SurfaceContours(mesh.panels)
         

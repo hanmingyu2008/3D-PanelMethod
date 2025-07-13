@@ -289,6 +289,23 @@ def influence_coeff(r_p:Vector, panel:Panel, alpha=10):
         
     return B, C
 
+def source_velocity(r_target: Vector, panel: Panel):
+    r = r_target - panel.r_cp
+    distance = r.norm()
+    if distance < 1e-10:
+        return panel.sigma * 0.5 * panel.n
+    # 修正：乘以 panel.area
+    return panel.sigma * panel.area * r / (4 * np.pi * distance**3)
+
+def doublet_velocity(r_target, panel):
+    r = r_target - panel.r_cp
+    distance = r.norm()
+    if distance < 1e-10:
+        return Vector((0,0,0))
+    term1 = 3 * r * (panel.n * r) / (4 * np.pi * distance**5)
+    term2 = panel.n / (4 * np.pi * distance**3)
+    return panel.mu * (term1 - term2) * panel.area  # μ 是总强度，无需乘面积
+
 if __name__=='__main__':
     from matplotlib import pyplot as plt
     vertex1 = Vector((-1, -1, 1))
