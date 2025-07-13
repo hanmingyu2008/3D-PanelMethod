@@ -50,9 +50,9 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             panel.Velocity = panel_velocity(panel, panel_neighbours, self.V_fs)            
             
             # pressure coefficient calculation
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = panel.n * panel.Velocity
 
-    def solve_new(self, mesh:PanelMesh):
+    def solve_new(self, mesh:PanelMesh):  # 这个函数还没有改对！！！不要使用！！！
         
         for panel in mesh.panels:
             panel.sigma = source_strength(panel, self.V_fs) 
@@ -77,7 +77,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
             # pressure coefficient calculation
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = panel.n * panel.Velocity
     
     @staticmethod
     def influence_coeff_matrices(panels):
@@ -157,13 +157,17 @@ def panel_velocity(panel, panel_neighbours, V_fs):
     return V
 
 def panel_velocity_new(p, mesh, V_fs): 
-    # 这里采用的是非精确速度求法，是近似计算，其实可以考虑仿照influence coeff求法求更精确点的
+    # 这里采用的是精确速度求法，但是是错误的！！！
     
     V_disturb = Vector((0, 0, 0))
 
     for panel in mesh.panels:
-        V_disturb += source_velocity(p.r_cp, panel)
-        V_disturb += doublet_velocity(p.r_cp, panel)
+        if panel == p:
+            V_disturb += -0.5 * p.sigma * p.n * p.area   # 源自诱导
+            V_disturb += 0.5 * p.mu * p.n * p.area   # 双偶极子自诱导
+        else:
+            V_disturb += source_velocity(p.r_cp, panel)
+            V_disturb += doublet_velocity(p.r_cp, panel)
 
     return V_fs + V_disturb
    

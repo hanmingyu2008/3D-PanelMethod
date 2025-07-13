@@ -18,8 +18,6 @@ class Panel:
         self.n = None  # panel(中心点处)的单位法向向量
         self.l = None # l和m是(中心点处)的单位切向向量(正交的两个方向)
         self.m = None  # 
-    
-        # all vector are defined in the global coordinate system
         
         # R : 旋转矩阵
         # 下面的两个是把其他点和panel一起旋转了，并且保证panel的中心点r_cp会变成原点

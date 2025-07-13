@@ -128,7 +128,7 @@ def Dblt_influence_coeff(r_p:Vector, panel:Panel, alpha=10):
         if is_inside_polygon(polygon, point):
             # point p lies on panel's surface as z-->0
             # C = - 0.5  # if z--> +0
-            C = 0.5  # if z--> -0
+            C = - 0.5  # if z--> -0
         else:
             # point p lies outside of panel's surface as z-->0
             C = 0
@@ -294,17 +294,16 @@ def source_velocity(r_target: Vector, panel: Panel):
     distance = r.norm()
     if distance < 1e-10:
         return panel.sigma * 0.5 * panel.n
-    # 修正：乘以 panel.area
     return panel.sigma * panel.area * r / (4 * np.pi * distance**3)
 
 def doublet_velocity(r_target, panel):
     r = r_target - panel.r_cp
     distance = r.norm()
     if distance < 1e-10:
-        return Vector((0,0,0))
-    term1 = 3 * r * (panel.n * r) / (4 * np.pi * distance**5)
+        return -0.5 * panel.mu * panel.n
+    term1 = 3 * (panel.n * r) * r / (4 * np.pi * distance**5)
     term2 = panel.n / (4 * np.pi * distance**3)
-    return panel.mu * (term1 - term2) * panel.area  # μ 是总强度，无需乘面积
+    return panel.mu * panel.area * (term1 - term2)   
 
 if __name__=='__main__':
     from matplotlib import pyplot as plt
