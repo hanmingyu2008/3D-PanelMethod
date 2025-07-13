@@ -1,6 +1,7 @@
 import numpy as np
 from vector_class import Vector
-from influence_coefficient_functions import influence_coeff,source_velocity,doublet_velocity
+from influence_coefficient_functions import influence_coeff
+from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from mesh_class import PanelMesh
 from Algorithms import LeastSquares
 
@@ -44,13 +45,10 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         
         for panel in mesh.panels:
             
-            # Velocity caclulation with least squares approach (faster)
-            
             panel_neighbours = mesh.give_neighbours(panel)
             panel.Velocity = panel_velocity(panel, panel_neighbours, self.V_fs)            
             
-            # pressure coefficient calculation
-            panel.Cp = panel.n * panel.Velocity
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 # panel.n * panel.Velocity = 0 才对
 
     def solve_new(self, mesh:PanelMesh):  # 这个函数还没有改对！！！不要使用！！！
         
@@ -66,24 +64,18 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         for panel_id, panel in enumerate(mesh.panels):
             panel.mu = doublet_strengths[panel_id]
         
-        
-        # compute Velocity and pressure coefficient at panels' control points
         V_fs_norm = self.V_fs.norm()
         
         for panel in mesh.panels:
-            
-            # Velocity caclulation with least squares approach (faster)
-            
+
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
-            # pressure coefficient calculation
-            panel.Cp = panel.n * panel.Velocity
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
     @staticmethod
     def influence_coeff_matrices(panels):
         
-        # Compute Influence coefficient matrices
-        # Katz & Plotkin eq(9.24, 9.25) or eq(12.34, 12.35)
+        # Katz & Plotkin eq(9.24, 9.25)
         
         n = len(panels)
         B = np.zeros((n, n))
@@ -101,33 +93,24 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
                 
         return B, C
 
-# function definitions for functions used in solve method
 
 def source_strength(panel, V_fs):
     # Katz & Plotkin eq 9.12
-    # Katz & Plotkin defines normal vector n with opposite direction (inward)
     source_strength = - (panel.n * V_fs)
     return source_strength
 
 def right_hand_side(body_panels, B):
-    
-    # Calculate right-hand-side 
-    # Katz & Plotkin eq(12.35, 12.36)
-        
+
     Nb = len(body_panels)
     RHS = np.zeros(Nb)
     
-    # loop all over panels' control points
     for panel_i in body_panels:
         id_i = panel_i.id
         RHS[id_i] = 0
         
-        # loop all over panels
         for panel_j in body_panels:
             id_j = panel_j.id
             RHS[id_i] = RHS[id_i] - panel_j.sigma * B[id_i][id_j]
-        
-        
         
     return RHS
 
@@ -158,16 +141,17 @@ def panel_velocity(panel, panel_neighbours, V_fs):
 
 def panel_velocity_new(p, mesh, V_fs): 
     # 这里采用的是精确速度求法，但是是错误的！！！
-    
+    # 哪里错了呢??
     V_disturb = Vector((0, 0, 0))
 
     for panel in mesh.panels:
-        if panel == p:
-            V_disturb += -0.5 * p.sigma * p.n * p.area   # 源自诱导
-            V_disturb += 0.5 * p.mu * p.n * p.area   # 双偶极子自诱导
-        else:
-            V_disturb += source_velocity(p.r_cp, panel)
-            V_disturb += doublet_velocity(p.r_cp, panel)
+        # if panel != p:
+            # 源面板贡献
+            V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
+            # 双极子面板贡献
+            V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
+        # else:
+        #     V_disturb += 0.5*panel.sigma*panel.n
 
     return V_fs + V_disturb
    

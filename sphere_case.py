@@ -19,50 +19,7 @@ mesh = PanelMesh(nodes, shells)
 
 V_fs = Vector((1, 0, 0))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve(mesh)
-
-
-# ax = plt.axes(projection='3d')
-# ax.set_xlabel('x')
-# ax.set_ylabel('y')
-# ax.set_zlabel('z')
-# ax.view_init(0, 0)
-
-# for panel in mesh.panels:
-        
-#     r_vertex = panel.r_vertex
-    
-#     # plot panels
-#     if panel.num_vertices == 3:
-#         x = [r_vertex[0].x, r_vertex[1].x, r_vertex[2].x, r_vertex[0].x]
-#         y = [r_vertex[0].y, r_vertex[1].y, r_vertex[2].y, r_vertex[0].y]
-#         z = [r_vertex[0].z, r_vertex[1].z, r_vertex[2].z, r_vertex[0].z]
-#         ax.plot3D(x, y, z, color='k')
-        
-#     elif panel.num_vertices == 4:
-        
-#         x = [r_vertex[0].x, r_vertex[1].x, r_vertex[2].x, r_vertex[3].x,
-#             r_vertex[0].x]
-#         y = [r_vertex[0].y, r_vertex[1].y, r_vertex[2].y, r_vertex[3].y,
-#             r_vertex[0].y]
-#         z = [r_vertex[0].z, r_vertex[1].z, r_vertex[2].z, r_vertex[3].z,
-#             r_vertex[0].z]
-#         ax.plot3D(x, y, z, color='k') 
-        
-#     # plot normal vectors
-#     r_cp = panel.r_cp
-#     n = panel.n
-#     scale = 0.2
-#     n = n.scalar_product(scale)
-#     if abs(r_cp.z) <= 10**(-5):
-#         ax.scatter(r_cp.x, r_cp.y, r_cp.z, color='b', s=5)
-#         ax.quiver(r_cp.x, r_cp.y, r_cp.z, n.x, n.y, n.z, color='b')
-        
-#     else:
-#         ax.scatter(r_cp.x, r_cp.y, r_cp.z, color='k', s=5)
-#         ax.quiver(r_cp.x, r_cp.y, r_cp.z, n.x, n.y, n.z, color='r')
-        
-# plt.show()
+panel_method.solve_new(mesh)
 
 
 saved_ids = []
@@ -77,9 +34,6 @@ analytical_cp = 1 - (3/2*np.sin(analytical_theta))**2
 fig = plt.figure()
 plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'b-',
             label='Analytical - sphere')
-analytical_cp = 1 - 4 * np.sin(analytical_theta)**2
-plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'g-',
-            label='Analytical - cylinder')
 
 thetas = []
 Cp = []
