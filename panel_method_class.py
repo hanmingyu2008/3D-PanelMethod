@@ -39,8 +39,6 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         for panel_id, panel in enumerate(mesh.panels):
             panel.mu = doublet_strengths[panel_id]
         
-        
-        # compute Velocity and pressure coefficient at panels' control points
         V_fs_norm = self.V_fs.norm()
         
         for panel in mesh.panels:
@@ -81,12 +79,10 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         B = np.zeros((n, n))
         C = np.zeros_like(B)
         
-        # loop all over panels' control points
         for i, panel_i in enumerate(panels):
             
             r_cp = panel_i.r_cp
             
-            # loop all over panels
             for j, panel_j in enumerate(panels):
                 
                 B[i][j], C[i][j] = influence_coeff(r_cp, panel_j)
@@ -145,14 +141,10 @@ def panel_velocity_new(p, mesh, V_fs):
     V_disturb = Vector((0, 0, 0))
 
     for panel in mesh.panels:
-        # if p!= panel:
-            # 源面板贡献
-            V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
-            # 双极子面板贡献
-            V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
-        # else:
-        #     V_disturb += 0.5 * panel.sigma * panel.n
-        #     V_disturb += 0.5 * panel.mu * panel.n
+        # 源面板贡献
+        V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
+        # 双极子面板贡献
+        V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
 
     return V_fs + V_disturb
    

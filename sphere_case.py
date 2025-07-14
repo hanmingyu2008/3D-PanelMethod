@@ -27,8 +27,8 @@ for panel in mesh.panels:
     if abs(panel.r_cp.z) <= 10**(-3):
         saved_ids.append(panel.id)
 
-r = 1 # sphere radius
-x0, y0 = 0, 0 # center of sphere
+r = 1 
+x0, y0 = 0, 0 
 analytical_theta = np.linspace(-np.pi, np.pi, 200)
 analytical_cp = 1 - (3/2*np.sin(analytical_theta))**2
 fig = plt.figure()
