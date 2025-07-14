@@ -44,13 +44,13 @@ def plot_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
     
     Cp = [panel.Cp if panel.Cp > -3 else -3 for panel in panel_list] # Cp = [panel.Cp for panel in panel_list]
     Cp_norm = [(float(Cp_i)-min(Cp))/(max(Cp)-min(Cp)) for Cp_i in Cp]
-    facecolor = plt.cm.coolwarm(Cp_norm)
+    # facecolor = plt.cm.coolwarm(Cp_norm)
     
     fig = plt.figure()
     
     ax = plt.axes(projection='3d')
-    poly3 = Poly3DCollection(shells, facecolor=facecolor)
-    ax.add_collection(poly3)
+    # poly3 = Poly3DCollection(shells, facecolor=facecolor)
+    # ax.add_collection(poly3)
     ax.view_init(elevation, azimuth)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -63,7 +63,7 @@ def plot_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
     ax.set_zlim3d(z.min(), z.max())
     set_axes_equal(ax)
     
-    
+    '''
     m = cm.ScalarMappable(cmap=cm.coolwarm)
     m.set_array([min(Cp),max(Cp)])
     m.set_clim(vmin=min(Cp),vmax=max(Cp))
@@ -71,7 +71,15 @@ def plot_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
     # Cbar.set_ticks([round(x,2) for x in np.linspace(min(Cp), max(Cp), 6)])
     Cbar.set_ticks(np.linspace(min(Cp), max(Cp), 6))
     Cbar.set_ticklabels([str(round(x,2)) for x in np.linspace(min(Cp), max(Cp), 6)])
-    Cbar.set_label("Cp", rotation=0)
+    Cbar.set_label("Cp", rotation=0)'''
+
+    for panel in panel_list:
+        ax.quiver(panel.r_cp.x, panel.r_cp.y, panel.r_cp.z,
+              panel.n.x, panel.n.y, panel.n.z,
+              color='r', label='normal vector n')
+        ax.quiver(panel.r_cp.x, panel.r_cp.y, panel.r_cp.z,
+              panel.Velocity.x, panel.Velocity.y, panel.Velocity.z,
+              color='b', label='normal vector n')
     
     plt.show()
 

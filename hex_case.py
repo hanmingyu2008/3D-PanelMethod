@@ -1,0 +1,27 @@
+import numpy as np
+from vector_class import Vector
+from panel_method_class import PanelMethod, Steady_Wakeless_PanelMethod
+from matplotlib import pyplot as plt
+from plot_functions import plot_Cp_SurfaceContours
+from mesh_class import PanelMesh, Mesh
+from sphere import sphere
+
+
+nodes, shells = 0, 0
+nodes = [(-1,-1,-1), (-1,-1,1), (-1,1,-1), (-1,1,1),
+         (1,-1,-1), (1,-1,1), (1,1,-1), (1,1,1)]
+shells = [[0,1,3,2],[0,4,5,1],[0,2,6,4],[4,6,7,5],[1,5,7,3],[2,3,7,6]]
+
+mesh = PanelMesh(nodes, shells)
+
+# mesh = PanelMesh.generate_from_stl_file("Sphere_0080")
+
+
+V_fs = Vector((1, 0, 0))
+panel_method = Steady_Wakeless_PanelMethod(V_fs)
+panel_method.solve_new(mesh)
+
+print([panel.Cp for panel in mesh.panels])
+
+# Surface Contour plot
+plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)

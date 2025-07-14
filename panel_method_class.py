@@ -48,7 +48,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             panel_neighbours = mesh.give_neighbours(panel)
             panel.Velocity = panel_velocity(panel, panel_neighbours, self.V_fs)            
             
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 # panel.n * panel.Velocity = 0 才对
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
 
     def solve_new(self, mesh:PanelMesh):  # 这个函数还没有改对！！！不要使用！！！
         
@@ -70,7 +70,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
 
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = panel.Velocity * panel.n # 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
     @staticmethod
     def influence_coeff_matrices(panels):
@@ -145,13 +145,14 @@ def panel_velocity_new(p, mesh, V_fs):
     V_disturb = Vector((0, 0, 0))
 
     for panel in mesh.panels:
-        # if panel != p:
+        # if p!= panel:
             # 源面板贡献
             V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
             # 双极子面板贡献
             V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
         # else:
-        #     V_disturb += 0.5*panel.sigma*panel.n
+        #     V_disturb += 0.5 * panel.sigma * panel.n
+        #     V_disturb += 0.5 * panel.mu * panel.n
 
     return V_fs + V_disturb
    
