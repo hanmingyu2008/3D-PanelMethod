@@ -11,7 +11,7 @@ class Vector:
         self.z = components[2]
     
     def __str__(self): # 输出显示
-        """Human-readable string representation of the vector."""
+        
         return '({:g})ex + ({:g})ey + ({:g})ez'.format(self.x, self.y, self.z)
     
     def norm(self): # l^2范数计算

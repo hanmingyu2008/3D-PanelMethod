@@ -5,10 +5,6 @@ import numpy as np
 def sphere(radius, num_longitude, num_latitude,
                      mesh_shell_type='triangular'):
     
-    # sqrt = np.sqrt(node_num)
-    # num_longitude, num_latitude = np.floor(sqrt), np.ceil(sqrt)
-    # num_longitude, num_latitude = np.ceil(sqrt), np.floor(sqrt)
-    
     num_theta = int(num_longitude)
     num_phi = int(num_latitude)
     
@@ -31,34 +27,19 @@ def sphere(radius, num_longitude, num_latitude,
             nodes.append(node)
         
     if mesh_shell_type == 'quadrilateral':
-        # quadrilateral shells
         
         for i in range(num_theta):
             for j in range(num_phi-1):
                 
-                if j == 0:
-                    # shells.append([i*num_phi + j,
-                    #             i*num_phi + j+1,
-                    #             ((i+1)%num_theta )* num_phi + j+1])
-                    
+                if j == 0:                    
                     shells.append([j,
                                 i*num_phi + j+1,
                                 ((i+1)%num_theta )* num_phi + j+1])
                     
-                elif j == num_phi-2:            
-                    # shells.append([i*num_phi + j,
-                    #                i*num_phi + j+1,
-                    #             ((i+1)%num_theta )* num_phi + j])
-                    
+                elif j == num_phi-2:                             
                     shells.append([i*num_phi + j,
                                    j+1,
                                 ((i+1)%num_theta )* num_phi + j])
-                    
-                    # alternatively
-                    # shells.append([i*num_phi + j,
-                    #             ((i+1)%num_theta )* num_phi + j+1,
-                    #             ((i+1)%num_theta )* num_phi + j])
-                    
                     
                 else:            
                     shells.append([i*num_phi + j,
@@ -67,33 +48,18 @@ def sphere(radius, num_longitude, num_latitude,
                                 ((i+1)%num_theta )* num_phi + j])
                 
     elif mesh_shell_type == 'triangular':
-        ## triangular panels
         for i in range(num_theta):
             for j in range(num_phi-1):
                 
-                if j == 0:            
-                    # shells.append([i*num_phi + j,
-                    #                i*num_phi + j+1,
-                    #                ((i+1)%num_theta )* num_phi + j+1])
-                    
+                if j == 0:                                
                     shells.append([j,
                                    i*num_phi + j+1,
                                    ((i+1)%num_theta )* num_phi + j+1])
                   
-                elif j == num_phi-2:
-                    
-                    # shells.append([i*num_phi + j,
-                    #                i*num_phi + j+1,
-                    #             ((i+1)%num_theta )* num_phi + j])
-                    
+                elif j == num_phi-2:                    
                     shells.append([i*num_phi + j,
                                    j+1,
                                    ((i+1)%num_theta )* num_phi + j])
-                    
-                    # alternatively            
-                    # shells.append([i*num_phi + j,
-                    #                ((i+1)%num_theta)*num_phi + j+1,
-                    #                ((i+1)%num_theta)*num_phi + j])
                     
                 else:
                     shells.append([i*num_phi + j,

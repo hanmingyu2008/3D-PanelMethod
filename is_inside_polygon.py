@@ -1,3 +1,5 @@
+# 多边形判断 (找的)
+
 def onSegment(p:tuple, q:tuple, r:tuple) -> bool:
     """
     # https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/

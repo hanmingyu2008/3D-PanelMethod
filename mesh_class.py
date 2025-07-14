@@ -6,8 +6,6 @@ from plot_functions import set_axes_equal, move_view
 import numpy as np
 from vector_class import Vector
 from panel_class import Panel, triPanel, quadPanel
-from copy import deepcopy
-import stl
 
 '''
 网格Mesh类和PanelMesh、PanelAeroMesh类
@@ -129,10 +127,6 @@ class PanelMesh(Mesh):
     def give_neighbours(self, panel):
         
         neighbours_id_list = self.panel_neighbours[panel.id]
-        
-        # neighbours_list = []
-        # for id in neighbours_id_list:
-        #     neighbours_list.append(self.panels[id])
          
         neighbours_list = [self.panels[id] for id in neighbours_id_list]
         
@@ -231,172 +225,6 @@ class PanelMesh(Mesh):
         ax.figure.canvas.mpl_connect("key_press_event", move_view_)
         
         plt.show()
-    
-    
-    ### unsteady features  ###
-    '''  
-    def move_panel(self, panel_id, v_rel, dt):
-        
-        panel = self.panels[panel_id]
-        panel.move(v_rel, self.Vo, self.omega, self.R, dt)
-        self.panels[panel_id] = panel
-    
-    def move_panels(self, panel_id_list, v_rel, dt):
-        
-        for id in panel_id_list:
-            self.move_panel(id, v_rel, dt)  '''    
-           
-    def plot_mesh_inertial_frame(self, elevation=30, azimuth=-60):
-        shells = []
-        vert_coords = []
-                
-        for panel in self.panels:
-            shell=[]
-            for r_vertex in panel.r_vertex:
-                r = self.ro + r_vertex.transformation(self.R)
-                shell.append((r.x, r.y, r.z))
-                vert_coords.append([r.x, r.y, r.z])
-            shells.append(shell)
-        
-        
-        light_vec = light_vector(magnitude=1, alpha=-45, beta=-45)
-        face_normals = [panel.n.transformation(self.R) for panel in self.panels]
-        dot_prods = [-light_vec * face_normal for face_normal in face_normals]
-        min = np.min(dot_prods)
-        max = np.max(dot_prods)
-        target_min = 0.2 # darker gray
-        target_max = 0.6 # lighter gray
-        shading = [(dot_prod - min)/(max - min) *(target_max - target_min) 
-                   + target_min
-                   for dot_prod in dot_prods]
-        facecolor = plt.cm.gray(shading)
-        
-        ax = plt.axes(projection='3d')
-        poly3 = Poly3DCollection(shells, facecolor=facecolor)
-        ax.add_collection(poly3)
-        ax.view_init(elevation, azimuth)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-
-        
-        # Body-fixed frame of reference f'
-        ex = Vector((1, 0, 0))  # ex'
-        ey = Vector((0, 1, 0))  # ey'
-        ez = Vector((0, 0, 1))  # ez'
-        
-        ex = ex.transformation(self.R)
-        ey = ey.transformation(self.R)
-        ez = ez.transformation(self.R)
-        
-        ro = self.ro
-        ax.quiver(ro.x, ro.y, ro.z, ex.x, ex.y, ex.z, color='b', label="ex'")
-        ax.quiver(ro.x, ro.y, ro.z, ey.x, ey.y, ey.z, color='g', label="ey'")
-        ax.quiver(ro.x, ro.y, ro.z, ez.x, ez.y, ez.z, color='r', label="ez'")
-        
-        
-        # Inertial frame of reference
-        ex = Vector((1, 0, 0))  # eX
-        ey = Vector((0, 1, 0))  # eY
-        ez = Vector((0, 0, 1))  # eZ
-        
-        ax.quiver(0, 0, 0, ex.x, ex.y, ex.z, color='b', label='ex')
-        ax.quiver(0, 0, 0, ey.x, ey.y, ey.z, color='g', label='ey')
-        ax.quiver(0, 0, 0, ez.x, ez.y, ez.z, color='r', label='ez')
-        
-        vert_coords.append([ex.x, ex.y, ex.z])
-        vert_coords.append([ey.x, ey.y, ey.z])
-        vert_coords.append([ez.x, ez.y, ez.z])
-       
-       
-        vert_coords = np.array(vert_coords)
-        x, y, z = vert_coords[:, 0], vert_coords[:, 1], vert_coords[:, 2]
-        ax.set_xlim3d(x.min(), x.max())
-        ax.set_ylim3d(y.min(), y.max())
-        ax.set_zlim3d(z.min(), z.max())
-        
-        set_axes_equal(ax)
-        
-        move_view_ = lambda event: move_view(event, ax)
-        ax.figure.canvas.mpl_connect("key_press_event", move_view_)
-        
-        plt.show()
-    
-    def plot_mesh_bodyfixed_frame(self, elevation=30, azimuth=-60):
-        shells = []
-        vert_coords = []
-                
-        for panel in self.panels:
-            shell=[]
-            for r_vertex in panel.r_vertex:
-                shell.append((r_vertex.x, r_vertex.y, r_vertex.z))
-                vert_coords.append([r_vertex.x, r_vertex.y, r_vertex.z])
-            shells.append(shell)
-        
-        
-        light_vec = light_vector(magnitude=1, alpha=-45, beta=-45)
-        face_normals = [panel.n for panel in self.panels]
-        dot_prods = [-light_vec * face_normal for face_normal in face_normals]
-        min = np.min(dot_prods)
-        max = np.max(dot_prods)
-        target_min = 0.2 # darker gray
-        target_max = 0.6 # lighter gray
-        shading = [(dot_prod - min)/(max - min) *(target_max - target_min) 
-                   + target_min
-                   for dot_prod in dot_prods]
-        facecolor = plt.cm.gray(shading)
-        
-        ax = plt.axes(projection='3d')
-        poly3 = Poly3DCollection(shells, facecolor=facecolor)
-        ax.add_collection(poly3)
-        ax.view_init(elevation, azimuth)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        
-        
-        # Body-fixed frame of reference f'
-        ex = Vector((1, 0, 0))  # ex'
-        ey = Vector((0, 1, 0))  # ey'
-        ez = Vector((0, 0, 1))  # ez'
-        
-        ax.quiver(0, 0, 0, ex.x, ex.y, ex.z, color='b', label="ex'")
-        ax.quiver(0, 0, 0, ey.x, ey.y, ey.z, color='g', label="ey'")
-        ax.quiver(0, 0, 0, ez.x, ez.y, ez.z, color='r', label="ez'")
-        
-        
-        # Inertial frame of reference F
-        ro = -self.ro  # ro: r_oo' -> r_o'o = -roo'  
-        ex = Vector((1, 0, 0))  # eX
-        ey = Vector((0, 1, 0))  # eY
-        ez = Vector((0, 0, 1))  # eZ
-        
-        ro = ro.transformation(self.R.T)
-        ex = ex.transformation(self.R.T)
-        ey = ey.transformation(self.R.T)
-        ez = ez.transformation(self.R.T)
-        
-        
-        ax.quiver(ro.x, ro.y, ro.z, ex.x, ex.y, ex.z, color='b', label='ex')
-        ax.quiver(ro.x, ro.y, ro.z, ey.x, ey.y, ey.z, color='g', label='ey')
-        ax.quiver(ro.x, ro.y, ro.z, ez.x, ez.y, ez.z, color='r', label='ez')
-        
-        vert_coords.append([(ro+ex).x, (ro+ex).y, (ro+ex).z])
-        vert_coords.append([(ro+ey).x, (ro+ey).y, (ro+ey).z])
-        vert_coords.append([(ro+ez).x, (ro+ez).y, (ro+ez).z])
-                    
-        
-        vert_coords = np.array(vert_coords)
-        x, y, z = vert_coords[:, 0], vert_coords[:, 1], vert_coords[:, 2]
-        ax.set_xlim3d(x.min(), x.max())
-        ax.set_ylim3d(y.min(), y.max())
-        ax.set_zlim3d(z.min(), z.max())
-        set_axes_equal(ax)
-        
-        move_view_ = lambda event: move_view(event, ax)
-        ax.figure.canvas.mpl_connect("key_press_event", move_view_)
-        
-        plt.show()        
 
         
 if __name__=='__main__':

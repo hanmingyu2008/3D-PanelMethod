@@ -2,6 +2,7 @@ import numpy as np
 from vector_class import Vector
 '''
 Panel(面元)类和以此为基类的两个类:三角形网格类(triPanel)和四边形网格类(quadPanel)
+注意：顶点序列应该是从外部看为逆时针
 '''
         
 class Panel:
@@ -180,7 +181,6 @@ class quadPanel(Panel): # (共面)四边形panel面元
         
     def set_up_geometry(self):
         self.set_centroid()
-        # self.set_unit_vectors()
         self.set_VSAERO_unit_vectors()
         self.set_R()
         self.set_r_vertex_local()
@@ -239,34 +239,8 @@ if __name__=='__main__':
     vertex1 = Vector((-1, -1, 2))
     vertex2 = Vector((1, -1, 2))
     vertex3 = Vector((1, 1, -2))
-    vertex4 = Vector((-1, 1, -2))
-    '''
-    # Polygon panel
-    def hexagon(center=(0, 0), r=1):
-        x0, y0 = center
-        numS = 6 # number of sides
-        # theta0 = (360/(numB-1))/2
-        theta0 = 0
-        theta = np.linspace(0, 360, numS+1)
-        theta = theta + theta0
-        theta = theta*(np.pi/180)
-        x = x0 + r* np.cos(theta)
-        y = y0 + r* np.sin(theta)
-        return [Vector((x[i], y[i], 0)) for i in range(numS)]'''
     
     panel = triPanel(vertex1,vertex2,vertex3)
-    
-    
-    # Quadrilateral panel
-    # panel = quadPanel(vertex1, vertex2, vertex3, vertex4)
-    
-    # Triangular panel
-    # panel = triPanel(vertex1, vertex2, vertex3)
-    
-    # print(panel.num_vertices)
-    # print(panel.n)
-    # print(panel.l)
-    # print(panel.m)
     
     ax = plt.axes(projection='3d')
     ax.set_xlabel('x')

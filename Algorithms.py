@@ -4,6 +4,8 @@ from scipy.stats import beta
 from vector_class import Vector
 from matplotlib import pyplot as plt
 
+# 所需算法类(找的)
+
 def LeastSquares(A, b):
     transposed = A.T
     inverted = inv(transposed @ A)
