@@ -76,6 +76,8 @@ def compute_source_panel_velocity(p_g: Vector, panel: Panel, sigma: float) -> Ve
     
         if is_inside_polygon(polygon, point):
             return 0.5 * sigma * panel.n
+        else:
+            return Vector((0,0,0))
     
     # 2. 初始化速度分量
     phi_x = 0.0
@@ -152,11 +154,31 @@ def compute_dipole_panel_velocity(p_g: Vector, panel: Panel, mu: float) -> Vecto
     x, y, z = p_local.x, p_local.y, p_local.z
 
     if z == 0:
-        point = (x,y)  
-        polygon = [(panel.r_vertex_local[i].x, panel.r_vertex_local[i].y) for i in range(panel.num_vertices)]
-    
-        if is_inside_polygon(polygon, point):
-            return Vector((0,0,0))
+        '''
+        w = 0
+        for k in range(panel.num_vertices):
+            k_next = (k+1) % panel.num_vertices
+
+            q_k = panel.r_vertex_local[k]
+            q_k_next = panel.r_vertex_local[k_next]
+        
+            x_k, y_k = q_k.x, q_k.y
+            x_k_next, y_k_next = q_k_next.x, q_k_next.y
+
+            r_k = sqrt((x - x_k)**2 + (y - y_k)**2 + z**2)
+            r_k_next = sqrt((x - x_k_next)**2 + (y - y_k_next)**2 + z**2)
+
+            h = (x-x_k_next)*(y-y_k) - (x-x_k)*(y-y_k_next)
+            l = (x-x_k)*(x-x_k_next) + (y-y_k)*(y-y_k_next)
+
+            w += h*(r_k+r_k_next) / (r_k*r_k_next*(r_k*r_k_next + l))
+        w *= (- mu / (4*np.pi))
+        v_local = Vector((0,0,w))
+        v_g = v_local.transformation(panel.R.T)  # 转置矩阵用于反向变换'''
+
+        v_g = 0.5 * mu * panel.n
+
+        return v_g
     
     # 2. 初始化速度分量
     psi_x = 0.0

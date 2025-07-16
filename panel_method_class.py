@@ -68,7 +68,32 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
 
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
-            panel.Cp = panel.Velocity * panel.n # 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+
+    def solve_newvelo(self, mesh:PanelMesh):
+        
+        for panel in mesh.panels:
+            panel.sigma = source_strength(panel, self.V_fs) 
+        
+        B, C = self.influence_velocoeff_matrices(mesh.panels)
+        
+        RHS = right_hand_side(mesh.panels, B)
+
+        for panel_id, panel in enumerate(mesh.panels):
+            RHS[panel_id] -= panel.n * self.V_fs
+        
+        doublet_strengths = np.linalg.solve(C, RHS)
+        
+        for panel_id, panel in enumerate(mesh.panels):
+            panel.mu = doublet_strengths[panel_id]
+        
+        V_fs_norm = self.V_fs.norm()
+        
+        for panel in mesh.panels:
+            
+            panel.Velocity = panel_velocity(panel, mesh.give_neighbours(panel), self.V_fs)            
+            
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
     @staticmethod
     def influence_coeff_matrices(panels):
@@ -86,6 +111,26 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             for j, panel_j in enumerate(panels):
                 
                 B[i][j], C[i][j] = influence_coeff(r_cp, panel_j)
+                
+        return B, C
+    
+    @staticmethod
+    def influence_velocoeff_matrices(panels):
+        
+        # Katz & Plotkin eq(9.24, 9.25)
+        
+        n = len(panels)
+        B = np.zeros((n, n))
+        C = np.zeros_like(B)
+        
+        for i, panel_i in enumerate(panels):
+            
+            r_cp = panel_i.r_cp
+            
+            for j, panel_j in enumerate(panels):
+                
+                B[i][j] = compute_source_panel_velocity(r_cp, panel_j, 1) * panel_i.n
+                C[i][j] = compute_dipole_panel_velocity(r_cp, panel_j, 1) * panel_i.n
                 
         return B, C
 
