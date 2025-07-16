@@ -19,7 +19,7 @@ mesh = PanelMesh(nodes, shells)
 
 V_fs = Vector((1, 0, 0))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve_newvelo(mesh)
+panel_method.solve_new(mesh)
 
 
 saved_ids = []

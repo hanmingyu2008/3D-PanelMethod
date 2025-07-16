@@ -132,6 +132,8 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
                 B[i][j] = compute_source_panel_velocity(r_cp, panel_j, 1) * panel_i.n
                 C[i][j] = compute_dipole_panel_velocity(r_cp, panel_j, 1) * panel_i.n
                 
+                if i == j:
+                    print(B[i][j],C[i][j])
         return B, C
 
 
