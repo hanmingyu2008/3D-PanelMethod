@@ -38,78 +38,90 @@ def quadratic_4(panel, neighboor_list, coplanarity_angle):
             T[i, 1] = radius_vector.y * correcting_factor
             T[i, 2] = T[i, 0]**2
             T[i, 3] = T[i, 1]**2
-            T[i, 4] = 1
+
             mu[i] = neigh.mu - panel.mu
         
         try:
-            solution = solve(T, mu)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
             ql = solution[0]  # A coefficient
             qp = solution[1]  # B coefficient
             v_err = False
         except:
             ql = 0
             qp = 0
-            v_err = 1
+            v_err = True
+        
+        V = Vector((ql,qp,0))
+        V = V.transformation(panel.R.T)
 
-        return ql,qp,v_err
+        return V,v_err
     
-def linear_4(self, x, y, z, l, p, n, coplanarity_angle, gama):
+def linear_4(panel, neighboor_list, coplanarity_angle):
         """
         Calculate induced velocities using linear interpolation with 5 points
         """
-        T = np.zeros((5, 3))
-        T[0] = [0, 0, 1]
+        T = np.zeros((4, 2))
+        mu = np.zeros((4,1))
         
-        for i in range(1, 5):
-            radius_vector = np.array([x[i]-x[0], y[i]-y[0], z[i]-z[0]])
-            correcting_factor = self.curvature_correction(
-                coplanarity_angle, radius_vector, n[:,0], n[:,i]
-            )
+        for i,neigh in enumerate(neighboor_list):
+            radius_vector = neigh.r_cp-panel.r_cp
+            radius_vector = radius_vector.transformation(panel.R)
+            correcting_factor = curvature_correction(coplanarity_angle, radius_vector, panel.n, neigh.n)
             
-            T[i, 0] = np.dot(radius_vector, l) * correcting_factor
-            T[i, 1] = np.dot(radius_vector, p) * correcting_factor
-            T[i, 2] = 1
+            T[i, 0] = radius_vector.x * correcting_factor
+            T[i, 1] = radius_vector.y * correcting_factor
+
+            mu[i] = neigh.mu - panel.mu
         
         try:
-            solution, _, _, _ = lstsq(T, gama)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
             ql = solution[0]  # A coefficient
             qp = solution[1]  # B coefficient
-            v_err = 0
+            v_err = False
         except:
             ql = 0
             qp = 0
-            v_err = 1
-        return ql,qp,v_err
+            v_err = True
+        
+        V = Vector((ql,qp,0))
+        V = V.transformation(panel.R.T)
+
+        return V,v_err
     
-def quadratic_3(self, x, y, z, l, p, n, coplanarity_angle, gama):
+def quadratic_3(panel, neighboor_list, coplanarity_angle):
         """
         Calculate induced velocities using quadratic interpolation with 4 points
         """
-        T = np.zeros((4, 4))
+        T = np.zeros((3, 3))
+        mu = np.zeros((3,1))
         
-        for i in range(1, 4):
-            radius_vector = np.array([x[i]-x[0], y[i]-y[0], z[i]-z[0]])
-            correcting_factor = self.curvature_correction(
-                coplanarity_angle, radius_vector, n[:,0], n[:,i]
-            )
+        for i,neigh in enumerate(neighboor_list):
+            radius_vector = neigh.r_cp-panel.r_cp
+            radius_vector = radius_vector.transformation(panel.R)
+            correcting_factor = curvature_correction(coplanarity_angle, radius_vector, panel.n, neigh.n)
             
-            T[i, 0] = np.dot(radius_vector, l)
-            T[i, 1] = np.dot(radius_vector, p)
-            T[i, 2] = T[i, 0]**2 + T[i, 1]**2
-            T[i, 3] = 1
+            T[i, 0] = radius_vector.x * correcting_factor
+            T[i, 1] = radius_vector.y * correcting_factor
+            T[i, 2] = T[i, 0]**2+T[i, 1]**2
+
+            mu[i] = neigh.mu - panel.mu
         
         try:
-            solution = solve(T, gama)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
             ql = solution[0]  # A coefficient
             qp = solution[1]  # B coefficient
-            v_err = 0
+            v_err = False
         except:
             ql = 0
             qp = 0
-            v_err = 1
-        return ql,qp,v_err
+            v_err = True
+        
+        V = Vector((ql,qp,0))
+        V = V.transformation(panel.R.T)
 
-def linear_3(self, points, l_vec, p_vec, normals, gama_nodal):
+        return V,v_err
+
+def linear_3(panel, neighboor_list, coplanarity_angle):
         """
         四点线性插值
         参数：
@@ -122,22 +134,33 @@ def linear_3(self, points, l_vec, p_vec, normals, gama_nodal):
             ql, qp: 局部坐标系速度分量
             v_err: 错误标志
         """
-        T = np.zeros((4, 3))  # 转换矩阵
-        T[0] = [0, 0, 1]      # 原点
+        T = np.zeros((3, 2))
+        mu = np.zeros((3,1))
         
-        for i in range(1, 4):
-            r_vec = np.array(points[i]) - np.array(points[0])
-            coplanarity_angle = 0.1
-            cf = self._curvature_correction(r_vec, normals[0], normals[i], coplanarity_angle)
-            T[i,0] = np.dot(r_vec, l_vec) * cf  # l方向分量
-            T[i,1] = np.dot(r_vec, p_vec) * cf  # p方向分量
-            T[i,2] = 1.0                        # 常数项
+        for i,neigh in enumerate(neighboor_list):
+            radius_vector = neigh.r_cp-panel.r_cp
+            radius_vector = radius_vector.transformation(panel.R)
+            correcting_factor = curvature_correction(coplanarity_angle, radius_vector, panel.n, neigh.n)
+            
+            T[i, 0] = radius_vector.x * correcting_factor
+            T[i, 1] = radius_vector.y * correcting_factor
+
+            mu[i] = neigh.mu - panel.mu                    
 
         try:
-            coeffs = solve(T, [gama_nodal[n-1] for n in points])
-            return coeffs[0], coeffs[1], 0  # ql, qp, no error
+            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
+            ql = solution[0]  # A coefficient
+            qp = solution[1]  # B coefficient
+            v_err = False
         except:
-            return 0, 0, 1  # 返回错误
+            ql = 0
+            qp = 0
+            v_err = True
+        
+        V = Vector((ql,qp,0))
+        V = V.transformation(panel.R.T)
+
+        return V,v_err
 
 def curvature_correction(coplanarity_angle, radius_vector, normal_1, normal_2):
         """
