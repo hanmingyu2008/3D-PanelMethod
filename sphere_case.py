@@ -8,7 +8,7 @@ from sphere import sphere
 
 
 radius = 1
-num_longitude, num_latitude = 21, 20
+num_longitude, num_latitude = 20, 21
 nodes, shells = sphere(radius, num_longitude, num_latitude,
                                     mesh_shell_type='quadrilateral')
 
@@ -17,14 +17,14 @@ mesh = PanelMesh(nodes, shells)
 # mesh = PanelMesh.generate_from_stl_file("Sphere_0080")
 
 
-V_fs = Vector((1, 0, 0))
+V_fs = Vector((0,0,1))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve_new(mesh)
+panel_method.solve(mesh)
 
 
 saved_ids = []
 for panel in mesh.panels:
-    if abs(panel.r_cp.z) <= 10**(-3):
+    if abs(panel.r_cp.y) <= 10**(-3):
         saved_ids.append(panel.id)
 
 r = 1 
@@ -39,7 +39,7 @@ thetas = []
 Cp = []
 for id in saved_ids:
     # print(mesh.panels[id].r_cp)
-    theta = np.arctan2(mesh.panels[id].r_cp.y, mesh.panels[id].r_cp.x)
+    theta = np.arctan2(mesh.panels[id].r_cp.x, mesh.panels[id].r_cp.z)
     thetas.append(np.rad2deg(theta))
     Cp.append(mesh.panels[id].Cp)
     
