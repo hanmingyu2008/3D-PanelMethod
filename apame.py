@@ -126,6 +126,63 @@ class VelocityCalculator:
             v_err = 1
 
         return ql,qp,v_err
+    
+    def _linear_5(self, x, y, z, l, p, n, coplanarity_angle, gama):
+        """
+        Calculate induced velocities using linear interpolation with 5 points
+        """
+        T = np.zeros((5, 3))
+        T[0] = [0, 0, 1]
+        
+        for i in range(1, 5):
+            radius_vector = np.array([x[i]-x[0], y[i]-y[0], z[i]-z[0]])
+            correcting_factor = self.curvature_correction(
+                coplanarity_angle, radius_vector, n[:,0], n[:,i]
+            )
+            
+            T[i, 0] = np.dot(radius_vector, l) * correcting_factor
+            T[i, 1] = np.dot(radius_vector, p) * correcting_factor
+            T[i, 2] = 1
+        
+        try:
+            solution, _, _, _ = lstsq(T, gama)
+            ql = solution[0]  # A coefficient
+            qp = solution[1]  # B coefficient
+            v_err = 0
+        except:
+            ql = 0
+            qp = 0
+            v_err = 1
+        return ql,qp,v_err
+    
+    def _quadratic_4(self, x, y, z, l, p, n, coplanarity_angle, gama):
+        """
+        Calculate induced velocities using quadratic interpolation with 4 points
+        """
+        T = np.zeros((4, 4))
+        T[0] = [0, 0, 0, 1]
+        
+        for i in range(1, 4):
+            radius_vector = np.array([x[i]-x[0], y[i]-y[0], z[i]-z[0]])
+            correcting_factor = self.curvature_correction(
+                coplanarity_angle, radius_vector, n[:,0], n[:,i]
+            )
+            
+            T[i, 0] = np.dot(radius_vector, l)
+            T[i, 1] = np.dot(radius_vector, p)
+            T[i, 2] = T[i, 0]**2 + T[i, 1]**2
+            T[i, 3] = 1
+        
+        try:
+            solution = solve(T, gama)
+            ql = solution[0]  # A coefficient
+            qp = solution[1]  # B coefficient
+            v_err = 0
+        except:
+            ql = 0
+            qp = 0
+            v_err = 1
+        return ql,qp,v_err
 
     def _linear_4(self, points, l_vec, p_vec, normals, gama_nodal):
         """
