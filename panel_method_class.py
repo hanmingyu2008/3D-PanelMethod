@@ -44,7 +44,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         for panel in mesh.panels:
             
             panel_neighbours = mesh.give_neighbours(panel)
-            panel.Velocity = panel_velocity(panel, panel_neighbours, self.V_fs)            
+            panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs)            
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
 
@@ -68,7 +68,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
 
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = panel.Velocity * panel.n # 1 - (panel.Velocity.norm()/V_fs_norm)**2
 
     def solve_newvelo(self, mesh:PanelMesh):
         
@@ -180,6 +180,31 @@ def panel_velocity(panel, panel_neighbours, V_fs):
     
     V = V_fs + V_disturb
     
+    return V
+
+def panel_velocity2(panel, panel_neighbours, V_fs): 
+    # 这里采用的是非精确速度求法，是近似计算，其实可以考虑仿照influence coeff求法求更精确点的
+    
+    n = len(panel_neighbours)
+    A = np.zeros((n, 3))
+    b = np.zeros((n, 1))
+    
+    for j, neighbour in enumerate(panel_neighbours):
+        r_ij = neighbour.r_cp - panel.r_cp
+        r_ij = r_ij.transformation(panel.R)
+        A[j][0] = r_ij.x
+        A[j][1] = r_ij.y
+        A[j][2] = r_ij.z
+        
+        b[j][0] = neighbour.mu - panel.mu
+    
+    del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=None)
+    components = (-del_mu[0,0], -del_mu[1,0], panel.sigma)
+
+    V_disturb = Vector(components)
+    V_disturb = V_disturb.transformation(panel.R.T)
+    
+    V = V_fs + V_disturb
     return V
 
 def panel_velocity_new(p, mesh, V_fs): 

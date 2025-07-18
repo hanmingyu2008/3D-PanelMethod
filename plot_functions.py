@@ -132,8 +132,8 @@ def plot_savedCp_SurfaceContours(panel_list, Cp, elevation=30, azimuth=-60):
             shell.append((r_vertex.x, r_vertex.y, r_vertex.z))
             vert_coords.append([r_vertex.x, r_vertex.y, r_vertex.z])
         shells.append(shell)
-    for x in Cp:
-       if x<-20: print(1)
+    # for i,x in enumerate(Cp):
+    #    if x<-0.5: print(i)
     # Cp = [x if x>-1 else 0 for x in Cp]
     Cp_norm = [(float(Cp_i)-min(Cp))/(max(Cp)-min(Cp)) for Cp_i in Cp]
     facecolor = plt.cm.coolwarm(Cp_norm)
