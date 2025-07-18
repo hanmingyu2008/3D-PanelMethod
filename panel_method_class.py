@@ -4,6 +4,7 @@ from influence_coefficient_functions import influence_coeff
 from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from mesh_class import PanelMesh
 from Algorithms import LeastSquares
+from apame import cal_velocity
 
 
 class PanelMethod:
@@ -44,7 +45,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         for panel in mesh.panels:
             
             panel_neighbours = mesh.give_neighbours(panel)
-            panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs)            
+            panel.Velocity = panel_velocity_apame(panel, panel_neighbours, self.V_fs)
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
 
@@ -200,6 +201,19 @@ def panel_velocity2(panel, panel_neighbours, V_fs):
     
     del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=None)
     components = (-del_mu[0,0], -del_mu[1,0], panel.sigma)
+
+    V_disturb = Vector(components)
+    V_disturb = V_disturb.transformation(panel.R.T)
+    
+    V = V_fs + V_disturb
+    return V
+
+def panel_velocity_apame(panel, panel_neighbours, V_fs):
+    ans = cal_velocity(panel, panel_neighbours, 2)
+    if ans == False:
+        raise Exception("速度计算有错误!")
+    a,b = ans
+    components = (-a, -b, panel.sigma)
 
     V_disturb = Vector(components)
     V_disturb = V_disturb.transformation(panel.R.T)
