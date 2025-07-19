@@ -5,7 +5,7 @@ from scipy.linalg import solve, lstsq
 
 def cal_velocity(panel, neighboor_list, order):
 
-    coplanarity_angle = 0.15
+    coplanarity_angle = 0.05
     if len(neighboor_list) == 4:
         if order == 2:
             ql, qp, v_err = quadratic_4(panel, neighboor_list, coplanarity_angle)
@@ -17,7 +17,7 @@ def cal_velocity(panel, neighboor_list, order):
         else:
             ql, qp, v_err = linear_3(panel, neighboor_list, coplanarity_angle)
     else:
-        return False
+        ql, qp, v_err = linear_2(panel, neighboor_list, coplanarity_angle)
     if v_err :
         return False
     return ql, qp
@@ -45,7 +45,7 @@ def quadratic_4(panel, neighboor_list, coplanarity_angle):
             mu[i] = neigh.mu - panel.mu
         
         try:
-            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-3)
             ql = solution[0,0]  # A coefficient
             qp = solution[1,0]  # B coefficient
             v_err = False
@@ -74,7 +74,7 @@ def linear_4(panel, neighboor_list, coplanarity_angle):
             mu[i] = neigh.mu - panel.mu
         
         try:
-            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-3)
             ql = solution[0,0]  # A coefficient
             qp = solution[1,0]  # B coefficient
             v_err = False
@@ -104,7 +104,7 @@ def quadratic_3(panel, neighboor_list, coplanarity_angle):
             mu[i] = neigh.mu - panel.mu
         
         try:
-            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-3)
             ql = solution[0,0]  # A coefficient
             qp = solution[1,0]  # B coefficient
             v_err = False
@@ -142,7 +142,35 @@ def linear_3(panel, neighboor_list, coplanarity_angle):
             mu[i] = neigh.mu - panel.mu                    
 
         try:
-            solution, _, _, _ = lstsq(T, mu, cond=1e-5)
+            solution, _, _, _ = lstsq(T, mu, cond=1e-3)
+            ql = solution[0,0]  # A coefficient
+            qp = solution[1,0]  # B coefficient
+            v_err = False
+        except:
+            ql = 0
+            qp = 0
+            v_err = True
+        
+        return ql,qp,v_err
+
+def linear_2(panel, neighboor_list, coplanarity_angle):
+        """
+        Calculate induced velocities using linear interpolation with 3 points
+        """
+        T = np.zeros((2, 2))
+        mu = np.zeros((2,1))
+        for i,neigh in enumerate(neighboor_list):
+            radius_vector = neigh.r_cp-panel.r_cp
+            radius_vector = radius_vector.transformation(panel.R)
+            correcting_factor = curvature_correction(coplanarity_angle, radius_vector, panel.n, neigh.n)
+            
+            T[i, 0] = radius_vector.x * correcting_factor
+            T[i, 1] = radius_vector.y * correcting_factor
+
+            mu[i] = neigh.mu - panel.mu
+        
+        try:
+            solution, _, _, _ = lstsq(T, mu, cond=1e-3)
             ql = solution[0,0]  # A coefficient
             qp = solution[1,0]  # B coefficient
             v_err = False

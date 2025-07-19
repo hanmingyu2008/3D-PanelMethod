@@ -1,6 +1,6 @@
 import numpy as np
 from vector_class import Vector
-from panel_method_class import Steady_Wakeless_PanelMethod
+from panel_method_class import panel_velocity_apame,panel_velocity2
 from matplotlib import pyplot as plt
 from plot_functions import plot_savedCp_SurfaceContours
 from mesh_class import PanelMesh

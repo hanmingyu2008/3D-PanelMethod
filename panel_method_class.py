@@ -92,7 +92,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
         
         for panel in mesh.panels:
             
-            panel.Velocity = panel_velocity(panel, mesh.give_neighbours(panel), self.V_fs)            
+            panel.Velocity = panel_velocity2(panel, mesh.give_neighbours(panel), self.V_fs)            
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
@@ -209,7 +209,7 @@ def panel_velocity2(panel, panel_neighbours, V_fs):
     return V
 
 def panel_velocity_apame(panel, panel_neighbours, V_fs):
-    ans = cal_velocity(panel, panel_neighbours, 2)
+    ans = cal_velocity(panel, panel_neighbours, 1)
     if ans == False:
         raise Exception("速度计算有错误!")
     a,b = ans
