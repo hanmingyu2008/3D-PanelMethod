@@ -26,7 +26,7 @@ print(len(nodes))
 print(len(shells))
 print(len(nodes))
 print(len(shells))
-'''
+''''''
 Cp = []
 with open("Cp.txt","r") as file:
     for line in file:
@@ -36,7 +36,7 @@ print(len(shells))
 
 Cp = Cp[:len(mesh.panels)]
 print(len(Cp))
-
+'''
 
 V_fs = Vector((1,0,0))
 V_fs_norm = V_fs.norm()
@@ -74,14 +74,13 @@ print(del_mu)
 '''
 for i,panel in enumerate(mesh.panels):
             
-    panel_neighbours = mesh.give_neighbours(panel)
+    panel_neighbours = mesh.give_neighbours2(panel)
     panel.sigma = - (panel.n * V_fs)
-    panel.Velocity = panel_velocity2(panel, panel_neighbours, V_fs)
+    panel.Velocity = panel_velocity2(panel, panel_neighbours, V_fs, rcond=1e-5)
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-    if abs(panel.Cp-Cp[i]) > 1e-5:
-        print("wrong:",i)
 
+Cp = [panel.Cp if panel.Cp<0.5 else 0 for panel in mesh.panels]
 # Cp = [panel.Cp for panel in mesh.panels]
 # Surface Contour plot
 plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
