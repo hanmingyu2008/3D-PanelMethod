@@ -75,13 +75,14 @@ print(del_mu)
 for i,panel in enumerate(mesh.panels):
             
     panel_neighbours = mesh.give_neighbours(panel)
+    panel.sigma = - (panel.n * V_fs)
     panel.Velocity = panel_velocity2(panel, panel_neighbours, V_fs)
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     if abs(panel.Cp-Cp[i]) > 1e-5:
         print("wrong:",i)
 
-Cp = [panel.Cp for panel in mesh.panels]
+# Cp = [panel.Cp for panel in mesh.panels]
 # Surface Contour plot
 plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
 print(len(mesh.panels))
