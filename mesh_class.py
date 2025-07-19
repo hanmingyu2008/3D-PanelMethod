@@ -22,12 +22,18 @@ class Mesh:
         self.shell_num = len(shells)
 
         self.shell_neighbours = self.locate_shells_adjacency()
+        self.shell_neighbours2 = self.locate_shells_adjacency2()
         
     
     @staticmethod
     def do_intersect(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表
         
-        return sum(node_id in shell_j for node_id in shell_i)>1     
+        return sum(node_id in shell_j for node_id in shell_i)>1    
+
+    @staticmethod
+    def do_intersect2(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表
+        
+        return sum(node_id in shell_j for node_id in shell_i)>0  
     
     def locate_shells_adjacency(self): # 求一个网格的邻接表 
         shells = self.shells 
@@ -39,6 +45,17 @@ class Mesh:
                     neighbours[-1].append(j) 
         
         return neighbours 
+    
+    def locate_shells_adjacency2(self): # 求一个网格的邻接表 
+        shells = self.shells 
+        neighbours = [] 
+        for i, shell_i in enumerate(shells):
+            neighbours.append([]) 
+            for j, shell_j in enumerate(shells): 
+                if i != j and self.do_intersect2(shell_i, shell_j): 
+                    neighbours[-1].append(j) 
+        
+        return neighbours
 
     def eliminate_adjacency(self, id_list1, id_list2): 
         
@@ -103,6 +120,7 @@ class PanelMesh(Mesh):
         self.panels = None
         self.panels_num = None
         self.panel_neighbours = self.shell_neighbours
+        self.panel_neighbours2 = self.shell_neighbours2
         self.CreatePanels()         
         
     def CreatePanels(self):
@@ -127,6 +145,14 @@ class PanelMesh(Mesh):
     def give_neighbours(self, panel):
         
         neighbours_id_list = self.panel_neighbours[panel.id]
+         
+        neighbours_list = [self.panels[id] for id in neighbours_id_list]
+        
+        return neighbours_list
+    
+    def give_neighbours2(self, panel):
+        
+        neighbours_id_list = self.panel_neighbours2[panel.id]
          
         neighbours_list = [self.panels[id] for id in neighbours_id_list]
         

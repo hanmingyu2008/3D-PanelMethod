@@ -199,7 +199,7 @@ def panel_velocity2(panel, panel_neighbours, V_fs):
         
         b[j][0] = neighbour.mu - panel.mu
     
-    del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=None)
+    del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=1e-3)
     components = (-del_mu[0,0], -del_mu[1,0], panel.sigma)
 
     V_disturb = Vector(components)
