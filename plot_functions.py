@@ -2,7 +2,7 @@ import numpy as np
 from panel_class import Panel
 from matplotlib import pyplot as plt, cm
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
+## 这里面有几种Cp作图函数，也需要略微介绍一下
 
 def set_axes_equal(ax):
 
@@ -24,6 +24,8 @@ def set_axes_equal(ax):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
 def plot_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
+    # 最普通的作图函数
+    # 有一列panel输入就好啦，可以做出panel的形状并用颜色标出其上的Cp值
     shells = []
     vert_coords = []
     for panel in panel_list:
@@ -67,6 +69,8 @@ def plot_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
     plt.show()
 
 def plotsave_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
+    # 在集群上跑的时候，我们作图不太关键，重要的是把Cp给记下来，这样才好到本地画图
+    # 在本地画图，才能够拖拽图像吧
     shells = []
     vert_coords = []
     for panel in panel_list:
@@ -116,6 +120,7 @@ def plotsave_Cp_SurfaceContours(panel_list, elevation=30, azimuth=-60):
     plt.close()
 
 def plot_savedCp_SurfaceContours(panel_list, Cp, elevation=30, azimuth=-60):
+    # 使用完上面那个函数，会到本地，我们把这个Cp变成一个list，带入这个函数就好啦
     shells = []
     vert_coords = []
     for panel in panel_list:

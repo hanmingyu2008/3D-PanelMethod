@@ -1,11 +1,8 @@
-import numpy as np
-from vector_class import Vector
-from panel_method_class import panel_velocity2
-from matplotlib import pyplot as plt
 from plot_functions import plot_Cp_SurfaceContours
 from mesh_class import PanelMesh
 
-
+# 其实很简单,就是把panel的Cp属性赋以mu的值，这样原先用来画出Cp图像的函数就可以用来画出mu的图像。
+# mu应当是一个比较平滑的函数，如果mu不太平滑，那么可能完蛋了。
 nodes = []
 shells = []
 

@@ -3,6 +3,8 @@ from vector_class import Vector
 from mesh_class import PanelMesh
 from scipy.linalg import solve, lstsq
 
+# 参见Apame的F90代码，这也是一种求速度的方式。同样是通过计算方向导数，他是通过多项式插值再求导，和最小二乘略有差别。
+
 def cal_velocity(panel, neighboor_list, order):
 
     coplanarity_angle = 0.05

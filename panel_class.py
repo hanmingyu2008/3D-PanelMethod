@@ -123,7 +123,7 @@ class quadPanel(Panel): # (共面)四边形panel面元
                  vertex2:Vector, vertex3:Vector):
         super().__init__([vertex0, vertex1, vertex2, vertex3])
         
-    def set_n(self):
+    def set_n(self): # 法向量计算
         r_1 = self.r_vertex[0]
         r_2 = self.r_vertex[1]
         r_3 = self.r_vertex[2]

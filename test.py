@@ -5,6 +5,8 @@ from influence_coefficient_functions import compute_source_panel_velocity,comput
 from mesh_class import PanelMesh
 from panel_class import quadPanel, triPanel, Panel
 
+## Lothar的论文里面有几个小测试，通过比对数据我觉得我前面的代码可以通过考量
+
 panel1 = quadPanel(Vector((-0.5,-0.5,0)),Vector((0.5,-0.5,0)),Vector((0.5,0.5,0)),Vector((-0.5,0.5,0)))
 panel2 = quadPanel(Vector((-0.7,-1,0)),Vector((-1,1,0)),Vector((1,0.5,0.8)),Vector((1,-1,1)))
 panel3 = triPanel(Vector((0,0,0)),Vector((1,0,0)),Vector((1,1,0)))

@@ -6,7 +6,7 @@ from vector_class import Vector
 from panel_class import Panel, triPanel, quadPanel
 
 '''
-网格Mesh类和PanelMesh、PanelAeroMesh类
+网格Mesh类和PanelMesh类
 '''
 
 
@@ -24,16 +24,16 @@ class Mesh:
         
     
     @staticmethod
-    def do_intersect(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表
+    def do_intersect(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表(有公共边)
         
         return sum(node_id in shell_j for node_id in shell_i)>1    
 
     @staticmethod
-    def do_intersect2(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表
+    def do_intersect2(shell_i, shell_j): # 判断两个shell是否相交，用于求出邻接表(有公共顶点)
         
         return sum(node_id in shell_j for node_id in shell_i)>0  
     
-    def locate_shells_adjacency(self): # 求一个网格的邻接表 
+    def locate_shells_adjacency(self): # 求一个网格的邻接表(有公共边)
         shells = self.shells 
         neighbours = [] 
         for i, shell_i in enumerate(shells):
@@ -44,7 +44,7 @@ class Mesh:
         
         return neighbours 
     
-    def locate_shells_adjacency2(self): # 求一个网格的邻接表 
+    def locate_shells_adjacency2(self): # 求一个网格的邻接表(有公共顶点)
         shells = self.shells 
         neighbours = [] 
         for i, shell_i in enumerate(shells):
@@ -111,7 +111,7 @@ class PanelMesh(Mesh):
         self.panels = panels
         self.panels_num = len(panels)
 
-    def give_neighbours(self, panel):
+    def give_neighbours(self, panel): # 返回某个panel的所有相邻panel(有相邻边)
         
         neighbours_id_list = self.panel_neighbours[panel.id]
          
@@ -119,7 +119,7 @@ class PanelMesh(Mesh):
         
         return neighbours_list
     
-    def give_neighbours2(self, panel):
+    def give_neighbours2(self, panel): # 返回某个panel的所有相邻panel(有相邻顶点)
         
         neighbours_id_list = self.panel_neighbours2[panel.id]
          
@@ -127,7 +127,7 @@ class PanelMesh(Mesh):
         
         return neighbours_list
     
-    def give_neighbours3(self, panel, num):
+    def give_neighbours3(self, panel, num): # 返回某个panel的所有相邻panel(有相邻边) 当中,法向量夹角更小的num个。用于后面求切向速度
         
         id_list = self.panel_neighbours[panel.id]
 
@@ -137,7 +137,7 @@ class PanelMesh(Mesh):
         
         return neighbours_list
     
-    def give_neighbours4(self, panel, num):
+    def give_neighbours4(self, panel, num): # 返回某个panel的所有相邻panel(有相邻顶点) 当中,更近的num个。用于后面求切向速度。
         
         id_list = self.panel_neighbours2[panel.id]
 
