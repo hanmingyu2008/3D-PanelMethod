@@ -81,6 +81,8 @@ for i,panel in enumerate(mesh.panels):
     panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+    if panel.Cp < -0.5:
+        print(i)
 
 Cp = [panel.Cp for panel in mesh.panels]
 # Surface Contour plot
