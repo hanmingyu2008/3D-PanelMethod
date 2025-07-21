@@ -14,8 +14,6 @@ nodes, shells = sphere(radius, num_longitude, num_latitude,
 
 mesh = PanelMesh(nodes, shells)
 
-# mesh = PanelMesh.generate_from_stl_file("Sphere_0080")
-
 
 V_fs = Vector((0,0,1))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
