@@ -18,7 +18,7 @@ def lsq(A,b,rcond):
     m,_ = V.shape
     Sver = np.zeros((m,n))
     for i in range(0,min(n,m)):
-        if S[i] < rcond * S[1]:
+        if S[i] < rcond * S[0]:
             Sver[i,i] = 0
         else:
             Sver[i,i] = 1/S[i]

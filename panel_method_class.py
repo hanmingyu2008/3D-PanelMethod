@@ -96,6 +96,28 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
+    def solve2(self, mesh:PanelMesh):
+        for panel in mesh.panels:
+            panel.sigma = source_strength(panel, self.V_fs) 
+        
+        B, C = self.influence_coeff_matrices(mesh.panels)
+        
+        RHS = right_hand_side(mesh.panels, B)
+        
+        doublet_strengths = np.linalg.solve(C, RHS)
+        
+        for panel_id, panel in enumerate(mesh.panels):
+            panel.mu = doublet_strengths[panel_id]
+        
+        V_fs_norm = self.V_fs.norm()
+        
+        for panel in mesh.panels:
+            
+            panel_neighbours = mesh.give_neighbours3(panel, 3)
+            panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
+            
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
+    
     @staticmethod
     def influence_coeff_matrices(panels):
         

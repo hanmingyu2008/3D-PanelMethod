@@ -158,6 +158,26 @@ class PanelMesh(Mesh):
         
         return neighbours_list
     
+    def give_neighbours3(self, panel, num):
+        
+        id_list = self.panel_neighbours[panel.id]
+
+        id_list = sorted(id_list,key= lambda id: self.panels[id].n * panel.n,reverse=True)
+         
+        neighbours_list = [self.panels[id] for id in id_list[:num]]
+        
+        return neighbours_list
+    
+    def give_neighbours4(self, panel, num):
+        
+        id_list = self.panel_neighbours2[panel.id]
+
+        id_list = sorted(id_list,key= lambda id: (self.panels[id].r_cp-panel.r_cp).norm(),reverse=False)
+         
+        neighbours_list = [self.panels[id] for id in id_list[:num]]
+        
+        return neighbours_list
+    
     def plot_panels(self, elevation=30, azimuth=-60):
         ax = plt.axes(projection='3d')
         ax.set_xlabel('x')

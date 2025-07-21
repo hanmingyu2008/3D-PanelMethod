@@ -4,6 +4,7 @@ from panel_method_class import panel_velocity2,panel_velocity,panel_velocity3
 from matplotlib import pyplot as plt
 from plot_functions import plot_savedCp_SurfaceContours
 from mesh_class import PanelMesh
+from Algorithms import lsq
 
 
 nodes = []
@@ -50,7 +51,7 @@ mu = mu[:len(shells)]
 for j,m in enumerate(mu):
     mesh.panels[j].mu = m
 '''
-panel = mesh.panels[17]
+panel = mesh.panels[144]
 panel_neighbours = mesh.give_neighbours(panel)
 
 n = len(panel_neighbours)
@@ -65,26 +66,20 @@ for j, neighbour in enumerate(panel_neighbours):
     A[j][2] = r_ij.z
         
     b[j][0] = neighbour.mu - panel.mu
-U,S,V = np.linalg.svd(A)
-del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=1e-5)
-
-print(A)
-print(U*S*V)
-print(b)
+del_mu = lsq(A, b, rcond=1e-1)
 print(del_mu)
+
+
 
 '''
 for i,panel in enumerate(mesh.panels):
             
-    panel_neighbours = mesh.give_neighbours(panel)
+    panel_neighbours = mesh.give_neighbours3(panel,3)
     panel.sigma = - (panel.n * V_fs)
     panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-    if panel.Cp < -0.5:
-        print(i)
 
 Cp = [panel.Cp for panel in mesh.panels]
 # Surface Contour plot
 plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
-print(len(mesh.panels))
