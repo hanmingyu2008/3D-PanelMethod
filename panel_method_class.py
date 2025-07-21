@@ -3,7 +3,7 @@ from vector_class import Vector
 from influence_coefficient_functions import influence_coeff
 from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from mesh_class import PanelMesh
-from Algorithms import LeastSquares,lsq
+from LSQ import LeastSquares,lsq
 from apame import cal_velocity
 
 
@@ -69,9 +69,9 @@ class Steady_Wakeless_PanelMethod(PanelMethod):
 
             panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
             
-            panel.Cp = panel.Velocity * panel.n # 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
 
-    def solve_newvelo(self, mesh:PanelMesh):
+    def solve_newvelo(self, mesh:PanelMesh): # 这个函数还没有改对！！！不要使用！！！
         
         for panel in mesh.panels:
             panel.sigma = source_strength(panel, self.V_fs) 
