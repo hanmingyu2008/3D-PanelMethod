@@ -3,7 +3,7 @@ from vector_class import Vector
 from influence_coefficient_functions import influence_coeff
 from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from mesh_class import PanelMesh
-from Algorithms import LeastSquares
+from Algorithms import LeastSquares,lsq
 from apame import cal_velocity
 
 
@@ -200,6 +200,31 @@ def panel_velocity2(panel, panel_neighbours, V_fs, rcond):
         b[j][0] = neighbour.mu - panel.mu
     
     del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond)
+    components = (-del_mu[0,0], -del_mu[1,0], panel.sigma)
+
+    V_disturb = Vector(components)
+    V_disturb = V_disturb.transformation(panel.R.T)
+    
+    V = V_fs + V_disturb
+    return V
+
+def panel_velocity3(panel, panel_neighbours, V_fs, rcond): 
+    # 这里采用的是非精确速度求法，是近似计算，其实可以考虑仿照influence coeff求法求更精确点的
+    
+    n = len(panel_neighbours)
+    A = np.zeros((n, 3))
+    b = np.zeros((n, 1))
+    
+    for j, neighbour in enumerate(panel_neighbours):
+        r_ij = neighbour.r_cp - panel.r_cp
+        r_ij = r_ij.transformation(panel.R)
+        A[j][0] = r_ij.x
+        A[j][1] = r_ij.y
+        A[j][2] = r_ij.z
+        
+        b[j][0] = neighbour.mu - panel.mu
+    
+    del_mu = lsq(A, b, rcond)
     components = (-del_mu[0,0], -del_mu[1,0], panel.sigma)
 
     V_disturb = Vector(components)

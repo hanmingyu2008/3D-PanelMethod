@@ -12,6 +12,19 @@ def LeastSquares(A, b):
     x = (inverted @ transposed) @ b
     return x
 
+def lsq(A,b,rcond):
+    [U,S,V] = np.linalg.svd(A)
+    n,_ = U.shape
+    m,_ = V.shape
+    Sver = np.zeros((m,n))
+    for i in range(0,min(n,m)):
+        if S[i] < rcond * S[1]:
+            Sver[i,i] = 0
+        else:
+            Sver[i,i] = 1/S[i]
+    return V.T @ Sver @ U.T @ b
+            
+
 def light_vector(magnitude, alpha, beta):
     
     """

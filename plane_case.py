@@ -1,6 +1,6 @@
 import numpy as np
 from vector_class import Vector
-from panel_method_class import panel_velocity2
+from panel_method_class import panel_velocity2,panel_velocity,panel_velocity3
 from matplotlib import pyplot as plt
 from plot_functions import plot_savedCp_SurfaceContours
 from mesh_class import PanelMesh
@@ -26,7 +26,7 @@ print(len(nodes))
 print(len(shells))
 print(len(nodes))
 print(len(shells))
-''''''
+'''
 Cp = []
 with open("Cp.txt","r") as file:
     for line in file:
@@ -36,7 +36,7 @@ print(len(shells))
 
 Cp = Cp[:len(mesh.panels)]
 print(len(Cp))
-'''
+
 
 V_fs = Vector((1,0,0))
 V_fs_norm = V_fs.norm()
@@ -50,7 +50,7 @@ mu = mu[:len(shells)]
 for j,m in enumerate(mu):
     mesh.panels[j].mu = m
 '''
-panel = mesh.panels[144]
+panel = mesh.panels[17]
 panel_neighbours = mesh.give_neighbours(panel)
 
 n = len(panel_neighbours)
@@ -65,23 +65,24 @@ for j, neighbour in enumerate(panel_neighbours):
     A[j][2] = r_ij.z
         
     b[j][0] = neighbour.mu - panel.mu
-del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=3e-2)
+U,S,V = np.linalg.svd(A)
+del_mu,_,_,_ = np.linalg.lstsq(A, b, rcond=1e-5)
 
 print(A)
+print(U*S*V)
 print(b)
 print(del_mu)
 
 '''
 for i,panel in enumerate(mesh.panels):
             
-    panel_neighbours = mesh.give_neighbours2(panel)
+    panel_neighbours = mesh.give_neighbours(panel)
     panel.sigma = - (panel.n * V_fs)
-    panel.Velocity = panel_velocity2(panel, panel_neighbours, V_fs, rcond=1e-5)
+    panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
 
-Cp = [panel.Cp if panel.Cp<0.5 else 0 for panel in mesh.panels]
-# Cp = [panel.Cp for panel in mesh.panels]
+Cp = [panel.Cp for panel in mesh.panels]
 # Surface Contour plot
 plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
 print(len(mesh.panels))
