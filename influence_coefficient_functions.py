@@ -5,6 +5,50 @@ from is_inside_polygon import is_inside_polygon
 # 几个函数都是参见Lothar的论文,第一个是对速度势的贡献,后两个是对速度的贡献。
 # 这里“贡献”指的都是单位大小的source/doublet面板对某个点处速度(势)的影响。
 
+def Dblt_influence_coeff(p_g:Vector, panel:Panel):
+    
+    C = 0
+    for k in range(panel.num_vertices):
+        k_next = (k+1)%(panel.num_vertices)
+        q_k = panel.r_vertex_local[k]
+        q_k_next = panel.r_vertex_local[k_next]
+
+        p_local = (p_g - panel.r_cp).transformation(panel.R)
+        x, y, z = p_local.x, p_local.y, p_local.z
+        
+        x_k, y_k = q_k.x, q_k.y
+        x_k_next, y_k_next = q_k_next.x, q_k_next.y
+
+        d_k = sqrt((x_k_next-x_k)**2+(y_k_next-y_k)**2)
+        if d_k == 0:
+            continue
+        e_k = (x-x_k)**2 + z**2
+        e_k_next = (x-x_k_next)**2 + z**2
+        h_k = (x-x_k)*(y-y_k)
+        h_k_next = (x-x_k_next)*(y-y_k_next)
+        m_k = (y_k_next-y_k)/(x_k_next-x_k) if x_k != x_k_next else float("inf")
+        r_k = sqrt((x-x_k)**2+(y-y_k)**2+z**2)
+        r_k_next = sqrt((x-x_k_next)**2+(y-y_k_next)**2+z**2)
+
+        termc = np.arctan((m_k*e_k-h_k)/(z*r_k)) - np.arctan((m_k*e_k_next-h_k_next)/(z*r_k_next)) if z!=0 else 0
+
+        C -= termc 
+    
+    if z == 0:
+        
+        point = (x,y)  
+        polygon = [(panel.r_vertex_local[i].x, panel.r_vertex_local[i].y) for i in range(panel.num_vertices)]
+    
+        if is_inside_polygon(polygon, point):
+            # C =  2 * np.pi  # if z--> +0
+            C = -2 * np.pi  # if z--> -0
+        else:
+            C = 0
+    
+    C = - 1/(4 * np.pi) * C
+        
+    return C
+
 def influence_coeff(p_g:Vector, panel:Panel):
     B = 0
     C = 0
