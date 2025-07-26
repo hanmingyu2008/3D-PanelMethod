@@ -243,8 +243,14 @@ class Steady_PanelMethod(PanelMethod):
         #     # pressure coefficient calculation
         #     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
 
-        # 还是采用基于 "Program VSAERO Theory Document" 的方法为好
-        VSAERO_onbody_analysis(self.V_fs, mesh)
+        # 还是采用基于 "Program VSAERO Theory Document" 的方法为好,似乎也不怎么样
+        # VSAERO_onbody_analysis(self.V_fs, mesh)
+        for panel_id in mesh.panels_ids["body"]:
+            panel = mesh.panels[panel_id]
+            panel_neighbours = mesh.give_neighbours3(panel, 3)
+            panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
+            
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
         
     @staticmethod
     def influence_coeff_matrices(mesh:PanelAeroMesh):
