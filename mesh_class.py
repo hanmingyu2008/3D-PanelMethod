@@ -149,12 +149,19 @@ class PanelMesh(Mesh):
         return neighbours_list
     
 class AeroMesh(Mesh):
+
+    # 定义时,需要有:
+    ## nodes,shells,与前面没有什么差别的顶点、格子列表
+    ## node_ids:字典，需要有:
+    ## nodes_ids = {"trailing edge":[], "suction side":[], "pressure side":[], "wake lines":[[..],[..],[..],...]}
+    ## shells_ids = {"body":[] ,"wake":[]}
+    ## 其实原来的代码里面还需要有别的键,但是我们先忽略了。
     
-    def __init__(self, nodes: list, shells: list, nodes_ids:dict):
+    def __init__(self, nodes: list, shells: list, nodes_ids:dict, shells_ids:dict):
         super().__init__(nodes, shells)
         
         self.nodes_ids = nodes_ids
-        self.shells_ids = {}
+        self.shells_ids = shells_ids
         self.TrailingEdge = {}
         self.wake_sheddingShells = {}
         
@@ -164,7 +171,7 @@ class AeroMesh(Mesh):
         
         self.free_TrailingEdge()
         # self.free_LeadingEdge()
-        self.eliminate_main_surface_wing_tips_adjacency()
+        # self.eliminate_main_surface_wing_tips_adjacency()
         self.eliminate_body_wake_adjacency()
     
     def find_TrailingEdge(self):
@@ -221,55 +228,19 @@ class AeroMesh(Mesh):
         
         return pressure_side_shells_ids
     
-    def find_right_wing_tip(self):
-        right_wing_tip_nodes_ids = self.nodes_ids["right wing tip"]
-        right_wing_tip_shells_ids = [
-            shell_id for shell_id, shell in enumerate(self.shells)
-            if sum(node_id in right_wing_tip_nodes_ids for node_id in shell)>2
-        ]
-        return right_wing_tip_shells_ids
-    
-    def find_left_wing_tip(self):
-        left_wing_tip_nodes_ids =  self.nodes_ids["left wing tip"]
-        left_wing_tip_shells_ids = [
-            shell_id for shell_id, shell in enumerate(self.shells)
-            if sum(node_id in left_wing_tip_nodes_ids for node_id in shell)>2
-        ]
-        return left_wing_tip_shells_ids
-    
-    def find_wake(self):
-        wake_nodes_ids = self.nodes_ids["wake"]
-        wake_shells_ids = [
-            shell_id for shell_id, shell in enumerate(self.shells)
-            if sum(node_id in wake_nodes_ids for node_id in shell)>2
-        ]
-        
-        return wake_shells_ids
     
     def set_shells_ids(self):
         
         suction_side_shells_ids = self.find_suction_side()
         pressure_side_shells_ids = self.find_pressure_side()
-        main_surface_shells_ids = suction_side_shells_ids\
-            +pressure_side_shells_ids
+        body_shells_ids = suction_side_shells_ids + pressure_side_shells_ids
         
-        right_wing_tip_shells_ids = self.find_right_wing_tip()
-        left_wing_tip_shells_ids = self.find_left_wing_tip()
-        wing_tips_shells_ids = right_wing_tip_shells_ids \
-            + left_wing_tip_shells_ids
-        
-        body_shells_ids = main_surface_shells_ids + wing_tips_shells_ids
-        
-        wake_shells_ids = self.find_wake()  
+        wake_shells_ids = self.shells_ids["wake"]
         
         self.shells_ids = {
             "body": body_shells_ids,
-            "main surface": main_surface_shells_ids,
             "suction side": suction_side_shells_ids,
             "pressure side": pressure_side_shells_ids,
-            "wing tips": wing_tips_shells_ids,
-            "right tip": right_wing_tip_shells_ids,
-            "left tip" : left_wing_tip_shells_ids,
             "wake": wake_shells_ids
         }
     
@@ -321,20 +292,12 @@ class AeroMesh(Mesh):
                 for id_k in old_shell_neighbours[id_j]: 
                     if id_k!=id_i and id_k not in self.shell_neighbours[id_i]:
                         self.shell_neighbours[id_i].append(id_k)      
-
-    def eliminate_main_surface_wing_tips_adjacency(self):
-        
-        if "wing tips" in self.shells_ids and "main surface" in self.shells_ids:
-            
-            self.eliminate_adjacency(
-                self.shells_ids["wing tips"], self.shells_ids["main surface"]
-            )
     
     def eliminate_body_wake_adjacency(self):
-        
-        if "main surface" in self.shells_ids and "wake" in self.shells_ids:
+        # 做了点修改，以前"body"的位置是"main surface"
+        if "body" in self.shells_ids and "wake" in self.shells_ids:
             self.eliminate_adjacency(
-                self.shells_ids["main surface"], self.shells_ids["wake"]
+                self.shells_ids["body"], self.shells_ids["wake"]
             )
     
     def give_near_root_shells_id(self):
@@ -358,27 +321,6 @@ class AeroMesh(Mesh):
         
         return near_root_shells_id
     
-    def give_leftSide_near_tip_shells_id(self):
-
-        if self.shells_ids["left tip"]:
-            left_wing_tip_shells_ids = self.shells_ids["left tip"]
-        else:
-            left_wing_tip_shells_ids = self.find_left_wing_tip()
-
-
-        left_wing_tip_nodes_ids =  self.nodes_ids["left wing tip"]
-        # wing tip shells' ids + near tip shells' ids
-        left_side_near_tip_shells_id = [
-            shell_id for shell_id, shell in enumerate(self.shells)
-            if sum(node_id in left_wing_tip_nodes_ids for node_id in shell)>1
-        ]
-
-        # remove ids from wing tip shells
-        left_side_near_tip_shells_id = [
-            id for id in left_side_near_tip_shells_id if id not in left_wing_tip_shells_ids
-        ]
-
-        return left_side_near_tip_shells_id
     
     def locate_VSAERO_adjacency(self):
         
@@ -540,38 +482,11 @@ class PanelAeroMesh(AeroMesh, PanelMesh):
     def free_TrailingEdge(self):
         super().free_TrailingEdge()
         self.panel_neighbours = self.shell_neighbours
-      
-    def give_near_root_panels(self):
-        near_root_shells_id = super().give_near_root_shells_id()
-        near_root_panels = []
-        for id in near_root_shells_id:
-            near_root_panels.append(self.panels[id])
-        
-        return near_root_panels
-    
-    def give_leftSide_near_root_panels(self):
-        
-        near_root_panels = self.give_near_root_panels()
-        
-        for panel in near_root_panels:
-            if panel.r_cp.y < 0:
-                near_root_panels.remove(panel)
-        
-        return near_root_panels
-
-    def give_leftSide_near_tip_panels(self):
-
-        leftSide_near_tip_panels = [
-            self.panels[id] for id in self.give_leftSide_near_tip_shells_id()
-        ]
-        return leftSide_near_tip_panels
        
 if __name__=='__main__':
     from matplotlib import pyplot as plt
     from sphere import sphere
     nodes, shells = sphere(1, 10, 10, mesh_shell_type='triangular')
     sphere_mesh = PanelMesh(nodes, shells)    
-    sphere_mesh.plot_panels()
-    sphere_mesh.plot_mesh_bodyfixed_frame()
     
     
