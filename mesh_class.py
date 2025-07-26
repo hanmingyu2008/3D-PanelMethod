@@ -83,6 +83,35 @@ class Mesh:
                 for id_k in old_shell_neighbours[id_j]: 
                     if id_k!=id_i and id_k not in self.shell_neighbours[id_i]:
                         self.shell_neighbours[id_i].append(id_k)   
+
+    def refinement(self):
+        nodes,shells = self.nodes,self.shells
+        newnodes,shells = nodes.copy(),[]
+        dic_edge = {}
+        for she in shells:
+            for k in range(len(she)):
+                k_next = (k+1)%len(she)
+                if frozenset({she[k],she[k_next]}) not in dic_edge:
+                    dic_edge[frozenset({she[k],she[k_next]})] = len(newnodes)
+                    x1,y1,z1 = nodes[she[k]]
+                    x2,y2,z2 = nodes[she[k_next]]
+                    newnodes.append(((x1+x2)/2,(y1+y2)/2,(z1+z2)/2))
+            if len(she) == 3:
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[0],she[2]})]])
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[1],she[0]})]])
+                shells.append([she[2],dic_edge[frozenset({she[2],she[0]})],dic_edge[frozenset({she[2],she[1]})]])
+            if len(she) == 4:
+                n = len(newnodes)
+                x1,y1,z1 = nodes[she[0]]
+                x2,y2,z2 = nodes[she[1]]
+                x3,y3,z3 = nodes[she[2]]
+                x4,y4,z4 = nodes[she[3]]
+                newnodes.append(((x1+x2+x3+x4)/4,(y1+y2+y3+y4)/4,(z1+z2+z3+z4)/4))
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],n,dic_edge[frozenset({she[0],she[3]})]])
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],n,dic_edge[frozenset({she[1],she[0]})]])
+                shells.append([she[2],dic_edge[frozenset({she[2],she[3]})],n,dic_edge[frozenset({she[2],she[1]})]])
+                shells.append([she[3],dic_edge[frozenset({she[3],she[0]})],n,dic_edge[frozenset({she[3],she[2]})]])
+        return Mesh(newnodes,shells)
                           
 class PanelMesh(Mesh):
     def __init__(self, nodes:list, shells:list):
@@ -147,6 +176,36 @@ class PanelMesh(Mesh):
         neighbours_list = [self.panels[id] for id in id_list[:num]]
         
         return neighbours_list
+    
+    def refinement(self):
+        nodes,shells = self.nodes,self.shells
+        newnodes,shells = nodes.copy(),[]
+        dic_edge = {}
+        for she in self.shells:
+            for k in range(len(she)):
+                k_next = (k+1)%len(she)
+                if frozenset({she[k],she[k_next]}) not in dic_edge:
+                    dic_edge[frozenset({she[k],she[k_next]})] = len(newnodes)
+                    x1,y1,z1 = nodes[she[k]]
+                    x2,y2,z2 = nodes[she[k_next]]
+                    newnodes.append(((x1+x2)/2,(y1+y2)/2,(z1+z2)/2))
+            if len(she) == 3:
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[0],she[2]})]])
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[1],she[0]})]])
+                shells.append([she[2],dic_edge[frozenset({she[2],she[0]})],dic_edge[frozenset({she[2],she[1]})]])
+                shells.append([dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[2],she[0]})]])
+            if len(she) == 4:
+                n = len(newnodes)
+                x1,y1,z1 = nodes[she[0]]
+                x2,y2,z2 = nodes[she[1]]
+                x3,y3,z3 = nodes[she[2]]
+                x4,y4,z4 = nodes[she[3]]
+                newnodes.append(((x1+x2+x3+x4)/4,(y1+y2+y3+y4)/4,(z1+z2+z3+z4)/4))
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],n,dic_edge[frozenset({she[0],she[3]})]])
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],n,dic_edge[frozenset({she[1],she[0]})]])
+                shells.append([she[2],dic_edge[frozenset({she[2],she[3]})],n,dic_edge[frozenset({she[2],she[1]})]])
+                shells.append([she[3],dic_edge[frozenset({she[3],she[0]})],n,dic_edge[frozenset({she[3],she[2]})]])
+        return PanelMesh(newnodes,shells)
     
 class AeroMesh(Mesh):
 
