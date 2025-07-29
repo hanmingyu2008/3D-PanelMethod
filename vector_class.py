@@ -117,6 +117,13 @@ class Vector:
         z = - self.z
         components = (x, y, z)
         return Vector(components)
+    
+    def __radd__(self, other):
+        # 处理 sum() 的情况：0 + Vector
+        if other == 0:  # sum() 默认从 0 开始累加
+            return self
+        # 如果不是 0，就尝试正常加法
+        return self.__add__(other)
         
         
 if __name__=='__main__':

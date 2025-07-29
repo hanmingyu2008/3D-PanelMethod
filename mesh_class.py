@@ -193,7 +193,8 @@ class PanelMesh(Mesh):
                 shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[0],she[2]})]])
                 shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[1],she[0]})]])
                 shells.append([she[2],dic_edge[frozenset({she[2],she[0]})],dic_edge[frozenset({she[2],she[1]})]])
-                shells.append([dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[2],she[0]})]])
+                shells.append([dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[1],she[2]})],
+                               dic_edge[frozenset({she[2],she[0]})]])
             if len(she) == 4:
                 n = len(newnodes)
                 x1,y1,z1 = nodes[she[0]]
@@ -215,24 +216,30 @@ class AeroMesh(Mesh):
     ## nodes_ids = {"trailing edge":[], "suction side":[], "pressure side":[], "wake lines":[[..],[..],[..],...]}
     ## shells_ids = {"body":[] ,"wake":[]}
     ## 其实原来的代码里面还需要有别的键,但是我们先忽略了。
+
+    ## 现在我们希望可以自动判断trailing edge和sunction side等等
+    ## 只需要输入哪些panel是wake,那些是body
     
-    def __init__(self, nodes: list, shells: list, nodes_ids:dict, shells_ids:dict):
+    def __init__(self, nodes: list, shells: list, shells_ids:dict):
         super().__init__(nodes, shells)
         
-        self.nodes_ids = nodes_ids
+        self.nodes = nodes
+        self.shells = shells
         self.shells_ids = shells_ids
+        '''
         self.TrailingEdge = {}
         self.wake_sheddingShells = {}
         
         self.set_shells_ids()
         self.find_TrailingEdge()
         self.set_wake_sheddingShells()
-        
+        '''
+        self.find_TrailingEdge2()
         self.free_TrailingEdge()
         # self.free_LeadingEdge()
         # self.eliminate_main_surface_wing_tips_adjacency()
         self.eliminate_body_wake_adjacency()
-    
+        
     def find_TrailingEdge(self):
         te = self.nodes_ids["trailing edge"]
         ss = self.nodes_ids["suction side"]
@@ -250,11 +257,84 @@ class AeroMesh(Mesh):
                 ]
                 
         self.TrailingEdge = {"suction side": SS_TE, "pressure side": PS_TE}
+    
+    def find_TrailingEdge2(self):
+        SS_TE = []
+        PS_TE = []
+        self.wake_sheddingShells = {}
+        temp = {}
+        horseshore_tail = {}
+        for wake_id in self.shells_ids["wake"]:
+            temp[wake_id] = False
+        num_temp = len(self.shells_ids["wake"])
+        for wake_id in self.shells_ids["wake"]:
+            lst = []
+            for body_id in self.shells_ids["body"]:
+                if self.do_intersect(self.shells[wake_id],self.shells[body_id]):
+                    lst.append(body_id)
+            if len(lst) == 1:
+                print(wake_id)
+                print(self.shells[wake_id])
+                print(lst)
+                print(self.shells[lst[0]])
+                raise Exception("len(lst) == 1,为什么?!")
+            if len(lst) == 0:
+                continue
+            if len(lst) > 2:
+                raise Exception("len(lst) > 2,为什么?!")
+            n1,n2 = lst
+            self.wake_sheddingShells[n1] = [wake_id]
+            horseshore_tail[n1] = self.shells[wake_id][-2:]
+            self.wake_sheddingShells[n2] = [wake_id]
+            horseshore_tail[n2] = self.shells[wake_id][-2:]
+            temp[wake_id] = True
+            num_temp -= 1
+            v1 = Panel([Vector(self.nodes[i]) for i in self.shells[n1]]).r_cp 
+            v2 = Panel([Vector(self.nodes[i]) for i in self.shells[n2]]).r_cp 
+            wake_panel = Panel([Vector(self.nodes[t]) for t in self.shells[wake_id]])
+            z1 = (v1-wake_panel.r_cp) * wake_panel.n
+            z2 = (v2-wake_panel.r_cp) * wake_panel.n
+            if z1 > z2:
+                SS_TE.append(n1)
+                PS_TE.append(n2)
+            elif z1 < z2:
+                SS_TE.append(n2)
+                PS_TE.append(n1)
+            else:
+                print(wake_id)
+                print("z1=z2,怎么会呢?")
+        self.TrailingEdge = {"suction side": SS_TE, "pressure side": PS_TE}
+        num_temp1 = num_temp
+        num_temp2 = num_temp
+        while num_temp1 != 0 or num_temp2 != 0:
+            changed1 = False
+            changed2 = False
+            for wake_id in temp:
+                if not temp[wake_id]:
+                    a,b = self.shells[wake_id][:2]
+                    for n in SS_TE:
+                        if horseshore_tail[n] == [b,a]:
+                            self.wake_sheddingShells[n].append(wake_id)
+                            horseshore_tail[n] = self.shells[wake_id][-2:]
+                            changed1 = True
+                            num_temp1 -= 1
+                    for n in PS_TE:
+                        if horseshore_tail[n] == [b,a]:
+                            self.wake_sheddingShells[n].append(wake_id)
+                            horseshore_tail[n] = self.shells[wake_id][-2:]
+                            changed2 = True
+                            num_temp2 -= 1
+
+
+            if not changed1 and not changed2:
+                raise ValueError("wake不呈马鬃型")
+            
 
     def free_TrailingEdge(self):
         """
         if trailing edge shells (or panels) share trailing edge nodes then
-        the method "find_shell_neighbours" will assume that suction side trailing shells and pressure side trailing shells are neighbours.
+        the method "find_shell_neighbours" will assume that suction side trailing shells and 
+        pressure side trailing shells are neighbours.
         In panel methods we assume that traling edge is a free edge.
         "free_TrailingEdge" method will remove false neighbour ids from the attribute shell_neighbour
         """
@@ -384,7 +464,8 @@ class AeroMesh(Mesh):
     def locate_VSAERO_adjacency(self):
         
         """
-        this function locates the neighbours of shells, following the notation of NASA Contractor Report 4023 "Program VSAERO theory Document,
+        this function locates the neighbours of shells, following the notation of NASA Contractor Report 4023 
+        "Program VSAERO theory Document,
         A Computer Program for Calculating Nonlinear Aerodynamic Characteristics
         of Arbitrary Configurations, Brian Maskew"
         """
@@ -501,7 +582,8 @@ class AeroMesh(Mesh):
       
     def give_ChordWiseStrips(self):
         """
-        this function returns an array Ny X Nx array of panel ids, where Nx is the number of chordwise panels and Ny the number of spanwise panels.
+        this function returns an array Ny X Nx array of panel ids,
+         where Nx is the number of chordwise panels and Ny the number of spanwise panels.
         
         j-th row corresponds to j-th chordwise strip
         i-th column corresponds to i-th spanwise strip
@@ -532,8 +614,8 @@ class AeroMesh(Mesh):
     
 class PanelAeroMesh(AeroMesh, PanelMesh):
     
-    def __init__(self, nodes: list, shells: list, nodes_ids: dict, shells_ids: dict):
-        super().__init__(nodes, shells, nodes_ids, shells_ids)
+    def __init__(self, nodes: list, shells: list, shells_ids: dict):
+        super().__init__(nodes, shells, shells_ids)
         
         self.panels_ids = self.shells_ids
         self.wake_sheddingPanels = self.wake_sheddingShells

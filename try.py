@@ -9,50 +9,16 @@ from plot_functions import plot_Cp_SurfaceContours
 from sphere import sphere
 
 
-radius = 1
-num_longitude, num_latitude = 20, 21
-nodes, shells = sphere(radius, num_longitude, num_latitude,
-                                    mesh_shell_type='quadrilateral')
-nodes_ids = {"trailing edge":[], "suction side":list(range(len(nodes))), "pressure side":[], "wake lines":[]}
-shells_ids = {"body":list(range(len(shells))),"wake":[]}
+nodes = [(0,0,0),(0,0,1),(0,0,-1),(-1,0,0),(-1,0,1),(-1,0,-1),(1,0,0),(1,0,1),(1,0,-1),(0,-1,0),(0,-2,0),
+         (-1,-1,0),(-1,-2,0),(1,-1,0),(1,-2,0),(0,-3,0),(-1,-3,0),(1,-3,0)]
+shells = [[0,1,4,3],[0,6,7,1],[0,2,8,6],[0,3,5,2],[0,3,11,9],[6,0,9,13],[9,11,12,10],[13,9,10,14],
+          [10,12,16,15],[14,10,15,17]]
+shells_ids = {"body":[0,1,2,3],"wake":[4,5,6,7,8,9]}
+mesh = PanelAeroMesh(nodes,shells,shells_ids)
 
-mesh = PanelAeroMesh(nodes,shells,nodes_ids,shells_ids)
+for id in mesh.TrailingEdge["pressure side"]:
+    mesh.panels[id].Cp = 1
 
-
-V_fs = Vector((0,0,1))
-panel_method = Steady_PanelMethod(V_fs)
-panel_method.solve(mesh)
-
-
-saved_ids = []
-for panel in mesh.panels:
-    if abs(panel.r_cp.y) <= 10**(-3):
-        saved_ids.append(panel.id)
-
-r = 1 
-x0, y0 = 0, 0 
-analytical_theta = np.linspace(-np.pi, np.pi, 200)
-analytical_cp = 1 - (3/2*np.sin(analytical_theta))**2
-fig = plt.figure()
-plt.plot(analytical_theta*(180/np.pi), analytical_cp ,'b-',
-            label='Analytical - sphere')
-
-thetas = []
-Cp = []
-for id in saved_ids:
-    # print(mesh.panels[id].r_cp)
-    theta = np.arctan2(mesh.panels[id].r_cp.x, mesh.panels[id].r_cp.z)
-    thetas.append(np.rad2deg(theta))
-    Cp.append(mesh.panels[id].Cp)
-    
-plt.plot(thetas, Cp, 'ks', markerfacecolor='r',
-            label='Panel Method - Sphere')
-plt.xlabel("angle [degrees]")
-plt.ylabel("Cp")
-plt.title("Cp distribution along the great circle of a sphere")
-plt.legend()
-plt.grid()
-plt.show()
-
+print(mesh.wake_sheddingPanels)
 # Surface Contour plot
 plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)
