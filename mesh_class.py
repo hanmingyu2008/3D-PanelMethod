@@ -34,15 +34,28 @@ class Mesh:
         
         return sum(node_id in shell_j for node_id in shell_i)>0  
     
-    def locate_shells_adjacency(self): # 求一个网格的邻接表(有公共边)
+    @staticmethod
+    def do_involve(shell_i, node_id_list):
+        
+        return sum(node_id in shell_i for node_id in node_id_list) == len(node_id_list)
+    
+    def locate_shells_adjacency(self): 
+        # 求一个网格的邻接表(有公共边)
+        # 我使邻居列表里面的东西都是按照顺序来排列的
         shells = self.shells 
         neighbours = [] 
         for i, shell_i in enumerate(shells):
-            neighbours.append([]) 
+            neigh_old = []
             for j, shell_j in enumerate(shells): 
                 if i != j and self.do_intersect(shell_i, shell_j): 
-                    neighbours[-1].append(j) 
-        
+                    neigh_old.append(j) 
+            neigh = []
+            for k in range(len(shell_i)):
+                k_next = (k+1)%len(shell_i)
+                for j in neigh_old:
+                    if self.do_involve(shells[j],[shell_i[k],shells[i][k_next]]):
+                        neigh.append(j)
+            neighbours.append(neigh)
         return neighbours 
     
     def locate_shells_adjacency2(self): # 求一个网格的邻接表(有公共顶点)

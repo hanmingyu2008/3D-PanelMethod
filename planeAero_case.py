@@ -1,6 +1,6 @@
 import numpy as np
 from vector_class import Vector
-from panel_method_class import panel_velocity2,panel_velocity,panel_velocity3
+from panel_method_class import panel_velocity2,panel_velocity,panel_velocity3,panel_velocity_new,VSAERO_panel_velocity
 from matplotlib import pyplot as plt
 from plot_functions import plot_savedCp_SurfaceContours
 from mesh_class import PanelAeroMesh
@@ -48,21 +48,45 @@ mu = mu[:len(shells)]
 for j,m in enumerate(mu):
     mesh.panels[j].mu = m
 L = 0
+L_ref = 0
 for i,panel in enumerate(mesh.panels):
-            
-    panel_neighbours = mesh.give_neighbours3(panel,3)
-    panel.sigma = - (panel.n * V_fs)
-    panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
+    if i == 1905:
+        pass
+    panel.sigma = -(panel.n * V_fs)
+    neighbours = mesh.give_neighbours(panel)
+    if len(neighbours) == 4:
+        b = True
+        for neigh in neighbours:
+            if neigh.num_vertices != 4:
+                b = False
+            if neigh.n * panel.n < 0.7:
+                    b = False
+        if b:
+            v = VSAERO_panel_velocity(V_fs,panel,neighbours)
+            panel_neighbours = mesh.give_neighbours3(panel,3)
+            panel.Velocity = v # panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2) 
+            cp = 1 - (v.norm()/V_fs_norm)**2
+            Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            # print(i,abs(cp-Cp),abs(cp-Cp)/abs(Cp))
+        else:
+
+            panel_neighbours = mesh.give_neighbours3(panel,3)
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
+    else:
+            panel_neighbours = mesh.give_neighbours3(panel,3)
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)        
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-    L -= panel.Cp * panel.area * (panel.n * Vector((0,0,1)))
 
+# VSAERO_onbody_analysis(V_fs, mesh)
 Cp = [panel.Cp for panel in mesh.panels]
-'''
-for i in mesh.TrailingEdge["suction side"]:
-    Cp[i] = 1
-for i in mesh.TrailingEdge["pressure side"]:
-    Cp[i] = -1
-'''
+
+for panel in mesh.panels:
+    L -= panel.Cp * panel.area * (panel.n * Vector((0,0,1)))
+    L_ref += panel.area * abs(panel.n * Vector((0,0,1)))
+
+# 335的邻居:1832，336，353，334
+panels = [mesh.panels[1905],mesh.panels[1865],mesh.panels[1906],mesh.panels[1923],mesh.panels[1904]]
 plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
 print(L)
+print(L_ref)

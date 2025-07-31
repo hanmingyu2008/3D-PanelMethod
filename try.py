@@ -20,5 +20,6 @@ for id in mesh.TrailingEdge["pressure side"]:
     mesh.panels[id].Cp = 1
 
 print(mesh.wake_sheddingPanels)
+print(mesh.shell_neighbours)
 # Surface Contour plot
 plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)
