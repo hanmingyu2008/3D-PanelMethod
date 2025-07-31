@@ -190,6 +190,15 @@ class PanelMesh(Mesh):
         
         return neighbours_list
     
+    def neighbour_of_neighbour(self,panel,i):
+        # 我们要找到panel的第i号邻居的所有邻居当中,与panel相对的那一个
+        nei = self.give_neighbours(panel)[i]
+        if nei.num_vertices != 4:
+            raise Exception("邻居必须是四边形才可以")
+        k = self.give_neighbours(nei).index(panel)
+        l = (k+2) % 4
+        return self.give_neighbours(nei)[l]
+    
     def refinement(self):
         nodes,shells = self.nodes,self.shells
         newnodes,shells = nodes.copy(),[]

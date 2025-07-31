@@ -429,6 +429,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         panel_j_minus1 = neighbour_1
         panel_j_plus1 = neighbour_3
         
+        if panel_j_minus1.num_vertices == 3:
+            panel_j_minus1.SMQ = (panel_j_minus1.r_cp - (panel.r_vertex[0]+panel.r_vertex[1])/2).norm()
+        if panel_j_plus1.num_vertices == 3:
+            panel_j_plus1.SMQ = (panel_j_plus1.r_cp - (panel.r_vertex[2]+panel.r_vertex[3])/2).norm()
+
         x1 = 0
         x0 = x1 - panel.SMQ - panel_j_minus1.SMQ
         x2 = x1 + panel.SMQ + panel_j_plus1.SMQ
@@ -445,6 +450,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         neighbour_3 = panel_neighbours[2]
         panel_j_minus1 = neighbour_1
         panel_j_minus2 = neighbour_3
+
+        if panel_j_minus1.num_vertices == 3:
+            raise Exception("这是不可以的!1")
+        if panel_j_minus2.num_vertices == 3:
+            raise Exception("这是不可以的!2") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
         
         x2 = 0
         x1 = x2 - panel.SMQ - panel_j_minus1.SMQ
@@ -463,6 +473,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         neighbour_3 = panel_neighbours[2]
         panel_j_plus1 = neighbour_3
         panel_j_plus2 = neighbour_1
+
+        if panel_j_plus1.num_vertices == 3:
+            raise Exception("这是不可以的!3")
+        if panel_j_plus2.num_vertices == 3:
+            raise Exception("这是不可以的!4") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
         
         x0 = 0
         x1 = x0 + panel.SMQ + panel_j_plus1.SMQ
@@ -482,6 +497,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         
         panel_i_minus1 = neighbour_4
         panel_i_plus1 = neighbour_2
+
+        if panel_i_minus1.num_vertices == 3:
+            panel_i_minus1.SMP = (panel_i_minus1.r_cp - (panel.r_vertex[1]+panel.r_vertex[2])/2).norm()
+        if panel_i_plus1.num_vertices == 3:
+            panel_i_plus1.SMP = (panel_i_plus1.r_cp - (panel.r_vertex[3]+panel.r_vertex[0])/2).norm()
         
         x1 = 0
         x0 = x1 - panel.SMP - panel_i_minus1.SMP
@@ -500,6 +520,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         
         panel_i_plus1 = neighbour_2
         panel_i_plus2 = neighbour_4
+
+        if panel_i_plus1.num_vertices == 3:
+            raise Exception("这是不可以的!5")
+        if panel_i_plus2.num_vertices == 3:
+            raise Exception("这是不可以的!6") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
         
         x0 = 0
         x1 = x0 + panel.SMP + panel_i_plus1.SMP
@@ -518,6 +543,11 @@ def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
         
         panel_i_minus1 = neighbour_4
         panel_i_minus2 = neighbour_2
+
+        if panel_i_minus1.num_vertices == 3:
+            raise Exception("这是不可以的!7")
+        if panel_i_minus2.num_vertices == 3:
+            raise Exception("这是不可以的!8") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
         
         x2 = 0
         x1 = x2 - panel.SMP - panel_i_minus1.SMP
