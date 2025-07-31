@@ -200,6 +200,7 @@ class PanelMesh(Mesh):
         return self.give_neighbours(nei)[l]
     
     def refinement(self):
+        # 加密,注意加密的时候也需要小心不要破坏了网格的规范(逆时针排列)
         nodes,shells = self.nodes,self.shells
         newnodes,shells = nodes.copy(),[]
         dic_edge = {}
@@ -231,14 +232,6 @@ class PanelMesh(Mesh):
         return PanelMesh(newnodes,shells)
     
 class AeroMesh(Mesh):
-
-    # 定义时,需要有:
-    ## nodes,shells,与前面没有什么差别的顶点、格子列表
-    ## node_ids:字典，需要有:
-    ## nodes_ids = {"trailing edge":[], "suction side":[], "pressure side":[], "wake lines":[[..],[..],[..],...]}
-    ## shells_ids = {"body":[] ,"wake":[]}
-    ## 其实原来的代码里面还需要有别的键,但是我们先忽略了。
-
     ## 现在我们希望可以自动判断trailing edge和sunction side等等
     ## 只需要输入哪些panel是wake,那些是body
     
@@ -645,6 +638,71 @@ class PanelAeroMesh(AeroMesh, PanelMesh):
     def free_TrailingEdge(self):
         super().free_TrailingEdge()
         self.panel_neighbours = self.shell_neighbours
+
+    def refinement(self):
+        # 加密,注意加密的时候也需要小心不要破坏了网格的规范(逆时针排列)
+        # 以及wake的规范更需要注意:       1 --- 0
+        #                               |     |
+        #                               2 --- 3
+        nodes,shells,shells_ids = self.nodes,self.shells,self.shells_ids
+        newnodes,shells,shells_ids_new = nodes.copy(),[],{"body":[],"wake":[]}
+        dic_edge = {}
+        for she_id in shells_ids["body"]:
+            she = self.shells[she_id]
+            for k in range(len(she)):
+                k_next = (k+1)%len(she)
+                if frozenset({she[k],she[k_next]}) not in dic_edge:
+                    dic_edge[frozenset({she[k],she[k_next]})] = len(newnodes)
+                    x1,y1,z1 = nodes[she[k]]
+                    x2,y2,z2 = nodes[she[k_next]]
+                    newnodes.append(((x1+x2)/2,(y1+y2)/2,(z1+z2)/2))
+        for she_id in shells_ids["wake"]:
+            she = self.shells[she_id]
+            assert(len(she) == 4)
+            if frozenset({she[0],she[1]}) not in dic_edge:
+                dic_edge[frozenset({she[0],she[1]})] = len(newnodes)
+                x1,y1,z1 = nodes[she[0]]
+                x2,y2,z2 = nodes[she[1]]
+                newnodes.append(((x1+x2)/2,(y1+y2)/2,(z1+z2)/2))
+            if frozenset({she[2],she[3]}) not in dic_edge:
+                dic_edge[frozenset({she[2],she[3]})] = len(newnodes)
+                x1,y1,z1 = nodes[she[2]]
+                x2,y2,z2 = nodes[she[3]]
+                newnodes.append(((x1+x2)/2,(y1+y2)/2,(z1+z2)/2))
+
+        for she_id in shells_ids["body"]:
+            she = self.shells[she_id]
+            if len(she) == 3:
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[0],she[2]})]])
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[1],she[0]})]])
+                shells.append([she[2],dic_edge[frozenset({she[2],she[0]})],dic_edge[frozenset({she[2],she[1]})]])
+                shells.append([dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[1],she[2]})],
+                               dic_edge[frozenset({she[2],she[0]})]])
+            if len(she) == 4:
+                n = len(newnodes)
+                x1,y1,z1 = nodes[she[0]]
+                x2,y2,z2 = nodes[she[1]]
+                x3,y3,z3 = nodes[she[2]]
+                x4,y4,z4 = nodes[she[3]]
+                newnodes.append(((x1+x2+x3+x4)/4,(y1+y2+y3+y4)/4,(z1+z2+z3+z4)/4))
+                shells_ids_new["body"].append(len(shells))
+                shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],n,dic_edge[frozenset({she[0],she[3]})]])
+                shells_ids_new["body"].append(len(shells))
+                shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],n,dic_edge[frozenset({she[1],she[0]})]])
+                shells_ids_new["body"].append(len(shells))
+                shells.append([she[2],dic_edge[frozenset({she[2],she[3]})],n,dic_edge[frozenset({she[2],she[1]})]])
+                shells_ids_new["body"].append(len(shells))
+                shells.append([she[3],dic_edge[frozenset({she[3],she[0]})],n,dic_edge[frozenset({she[3],she[2]})]])
+
+        for she_id in shells_ids["wake"]:
+            she = self.shells[she_id]
+            assert(len(she) == 4)
+            shells_ids_new["wake"].append(len(shells))
+            shells.append([dic_edge[frozenset({she[0],she[1]})],she[1],she[2],dic_edge[frozenset({she[2],she[3]})]])
+            shells_ids_new["wake"].append(len(shells))
+            shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[2],she[3]})],she[3]])
+
+        return PanelAeroMesh(newnodes,shells,shells_ids_new)
        
 if __name__=='__main__':
     from matplotlib import pyplot as plt

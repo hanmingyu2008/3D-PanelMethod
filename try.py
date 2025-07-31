@@ -19,7 +19,10 @@ mesh = PanelAeroMesh(nodes,shells,shells_ids)
 for id in mesh.TrailingEdge["pressure side"]:
     mesh.panels[id].Cp = 1
 
-print(mesh.wake_sheddingPanels)
-print(mesh.shell_neighbours)
 # Surface Contour plot
-plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)
+mesh2 = mesh.refinement()
+for id in mesh2.TrailingEdge["suction side"]:
+    mesh2.panels[id].Cp = 1
+print(mesh2.wake_sheddingPanels)
+print(mesh2.shell_neighbours)
+plot_Cp_SurfaceContours(mesh2.panels, elevation=20, azimuth=45)
