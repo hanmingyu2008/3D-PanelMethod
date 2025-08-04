@@ -1,5 +1,5 @@
 import numpy as np
-from vector_class import Vector
+from PanelMethod3D.vector_class import Vector
 '''
 Panel(面元)类和以此为基类的两个类:三角形网格类(triPanel)和四边形网格类(quadPanel)
 注意：顶点序列应该是从外部看为逆时针

@@ -1,9 +1,9 @@
 import numpy as np
-from vector_class import Vector
-from influence_coefficient_functions import influence_coeff
-from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
-from mesh_class import PanelMesh
-from panel_class import quadPanel, triPanel, Panel
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.influence_coefficient_functions import influence_coeff
+from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
+from PanelMethod3D.mesh_class import PanelMesh
+from PanelMethod3D.panel_class import quadPanel, triPanel, Panel
 
 ## Lothar的论文里面有几个小测试，通过比对数据我觉得我前面的代码可以通过考量
 

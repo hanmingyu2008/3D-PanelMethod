@@ -1,11 +1,11 @@
 import numpy as np
-from vector_class import Vector
-from disturbance_velocity_functions import Dblt_disturb_velocity,Src_disturb_velocity,Vrtx_ring_induced_veloctiy
-from influence_coefficient_functions import influence_coeff,Dblt_influence_coeff
-from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
-from mesh_class import PanelMesh,PanelAeroMesh
-from LSQ import LeastSquares,lsq
-from apame import cal_velocity
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.disturbance_velocity_functions import Dblt_disturb_velocity,Src_disturb_velocity,Vrtx_ring_induced_veloctiy
+from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_influence_coeff
+from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
+from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
+from PanelMethod3D.LSQ import LeastSquares,lsq
+from PanelMethod3D.apame import cal_velocity
 ## 最关键的函数了，这里面实现了多种用于求解势流问题的方法，包括solve和solve2等等
 # 这些方法各有千秋，其实并不算很难看懂，但我们也对每个函数都进行解释。
 # 部分solve们是参照README里面说的方法进行的，一直到计算出mu都是一摸一样，粘贴复制的。所以我们不再介绍这一部分了。
@@ -199,7 +199,7 @@ class Steady_PanelMethod(PanelMethod):
             panel_neighbours = mesh.give_neighbours3(panel, 3)
             panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
             '''
-            panel.Velocity = panel_velocity(panel,mesh.give_neighbours(panel),V_fs)
+            panel.Velocity = panel_velocity(panel,mesh.give_neighbours(panel),self.V_fs)
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
         
     @staticmethod
@@ -590,20 +590,4 @@ def VSAERO_onbody_analysis(V_fs:Vector, mesh:PanelAeroMesh):
             panel.Velocity = panel_velocity(panel, panel_neighbours, V_fs)
             
         panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-   
-if __name__ == "__main__":
-    from mesh_class import PanelMesh
-    from sphere import sphere
-    from plot_functions import plot_Cp_SurfaceContours
-    
-    radius = 1
-    num_longitude, num_latitude = 21, 20
-    nodes, shells = sphere(radius, num_longitude, num_latitude,
-                                     mesh_shell_type='quadrilateral')
-    mesh = PanelMesh(nodes, shells)
-    V_fs = Vector((1, 0, 0))
-    panel_method = Steady_Wakeless_PanelMethod(V_fs)
-    panel_method.solve(mesh)
-    # print([panel.Cp for panel in mesh.panels])
-    plot_Cp_SurfaceContours(mesh.panels)
         

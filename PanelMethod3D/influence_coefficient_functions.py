@@ -1,7 +1,7 @@
 import numpy as np
-from vector_class import Vector
-from panel_class import Panel, quadPanel, triPanel
-from is_inside_polygon import is_inside_polygon
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_class import Panel, quadPanel, triPanel
+from PanelMethod3D.is_inside_polygon import is_inside_polygon
 # 几个函数都是参见Lothar的论文,第一个是对速度势的贡献,后两个是对速度的贡献。
 # 这里“贡献”指的都是单位大小的source/doublet面板对某个点处速度(势)的影响。
 

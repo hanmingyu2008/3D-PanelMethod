@@ -1,7 +1,7 @@
 import numpy as np
-from vector_class import Vector
-from panel_class import Panel, quadPanel, triPanel
-from is_inside_polygon import is_inside_polygon
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_class import Panel, quadPanel, triPanel
+from PanelMethod3D.is_inside_polygon import is_inside_polygon
 
 
 def Src_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):

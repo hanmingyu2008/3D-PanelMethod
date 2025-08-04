@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from vector_class import Vector
-from influence_coefficient_functions import influence_coeff
-from influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
-from mesh_class import PanelMesh,PanelAeroMesh
-from panel_method_class import Steady_Wakeless_PanelMethod,Steady_PanelMethod
-from plot_functions import plot_Cp_SurfaceContours
-from sphere import sphere
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.influence_coefficient_functions import influence_coeff
+from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
+from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
+from PanelMethod3D.panel_method_class import Steady_Wakeless_PanelMethod,Steady_PanelMethod
+from PanelMethod3D.plot_functions import plot_Cp_SurfaceContours
 
 
 nodes = [(0,0,0),(0,0,1),(0,0,-1),(-1,0,0),(-1,0,1),(-1,0,-1),(1,0,0),(1,0,1),(1,0,-1),(0,-1,0),(0,-2,0),

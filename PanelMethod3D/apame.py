@@ -1,6 +1,6 @@
 import numpy as np
-from vector_class import Vector
-from mesh_class import PanelMesh
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.mesh_class import PanelMesh
 from scipy.linalg import solve, lstsq
 
 # 参见Apame的F90代码，这也是一种求速度的方式。同样是通过计算方向导数，他是通过多项式插值再求导，和最小二乘略有差别。

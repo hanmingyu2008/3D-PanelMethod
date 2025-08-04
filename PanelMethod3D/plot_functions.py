@@ -1,5 +1,5 @@
 import numpy as np
-from panel_class import Panel
+from PanelMethod3D.panel_class import Panel
 from matplotlib import pyplot as plt, cm
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 ## 这里面有几种Cp作图函数，也需要略微介绍一下

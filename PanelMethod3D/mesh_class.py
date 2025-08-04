@@ -1,9 +1,9 @@
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from plot_functions import set_axes_equal
+from PanelMethod3D.plot_functions import set_axes_equal
 import numpy as np
-from vector_class import Vector
-from panel_class import Panel, triPanel, quadPanel
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_class import Panel, triPanel, quadPanel
 from copy import deepcopy
 
 '''
@@ -723,11 +723,5 @@ class PanelAeroMesh(AeroMesh, PanelMesh):
             shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[2],she[3]})],she[3]])
 
         return PanelAeroMesh(newnodes,shells,shells_ids_new)
-       
-if __name__=='__main__':
-    from matplotlib import pyplot as plt
-    from sphere import sphere
-    nodes, shells = sphere(1, 10, 10, mesh_shell_type='triangular')
-    sphere_mesh = PanelMesh(nodes, shells)    
     
     
