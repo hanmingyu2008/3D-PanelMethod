@@ -1,10 +1,10 @@
 import numpy as np
-from vector_class import Vector
-from panel_method_class import panel_velocity2,panel_velocity,panel_velocity3
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_method_class import panel_velocity2,panel_velocity,panel_velocity3
 from matplotlib import pyplot as plt
-from plot_functions import plot_savedCp_SurfaceContours,plot_Cp_SurfaceContours
-from mesh_class import PanelMesh
-from LSQ import lsq
+from PanelMethod3D.plot_functions import plot_savedCp_SurfaceContours,plot_Cp_SurfaceContours
+from PanelMethod3D.mesh_class import PanelMesh
+from PanelMethod3D.LSQ import lsq
 
 nodes = []
 shells = []

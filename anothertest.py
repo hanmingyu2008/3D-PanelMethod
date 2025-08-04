@@ -1,11 +1,11 @@
 import numpy as np
 from math import cos,sin,pi
-from vector_class import Vector
-from panel_method_class import Steady_PanelMethod,VSAERO_panel_velocity,panel_velocity3
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_method_class import Steady_PanelMethod,VSAERO_panel_velocity,panel_velocity3
 from matplotlib import pyplot as plt
-from plot_functions import plot_Cp_SurfaceContours,plot_savedCp_SurfaceContours
-from mesh_class import PanelAeroMesh
-from LSQ import lsq
+from PanelMethod3D.plot_functions import plot_Cp_SurfaceContours,plot_savedCp_SurfaceContours
+from PanelMethod3D.mesh_class import PanelAeroMesh
+from PanelMethod3D.LSQ import lsq
 
 
 nodes = []
