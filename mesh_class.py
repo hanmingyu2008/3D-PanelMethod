@@ -21,7 +21,7 @@ class Mesh:
         self.shell_num = len(shells)
 
         self.shell_neighbours = self.locate_shells_adjacency()
-        self.shell_neighbours2 = self.locate_shells_adjacency2()
+        # self.shell_neighbours2 = self.locate_shells_adjacency2()
         
     
     @staticmethod
@@ -132,7 +132,8 @@ class PanelMesh(Mesh):
         self.panels = None
         self.panels_num = None
         self.panel_neighbours = self.shell_neighbours
-        self.panel_neighbours2 = self.shell_neighbours2
+        # self.panel_neighbours2 = self.shell_neighbours2
+        self.non_zero_panel = []
         self.CreatePanels()         
         
     def CreatePanels(self):
@@ -144,10 +145,25 @@ class PanelMesh(Mesh):
                 vertex.append(Vector(node))
 
             if len(vertex) == 3:
-                panels.append(triPanel(vertex[0], vertex[1], vertex[2]))
+                panel = triPanel(vertex[0],vertex[1],vertex[2])
+                panels.append(panel)
+                if panel.area != 0:
+                    self.non_zero_panel.append(shell_id)
+                else:
+                    for i in self.panel_neighbours[shell_id]:
+                        for j in self.panel_neighbours[shell_id]:
+                            if i!=j and i not in self.panel_neighbours[j]:
+                                self.panel_neighbours[j].append(i)
             elif len(vertex) == 4:
-                panels.append(quadPanel(vertex[0], vertex[1],
-                                        vertex[2], vertex[3]))
+                panel = quadPanel(vertex[0],vertex[1],vertex[2],vertex[3])
+                panels.append(panel)
+                if panel.area != 0:
+                    self.non_zero_panel.append(shell_id)
+                else:
+                    for i in self.panel_neighbours[shell_id]:
+                        for j in self.panel_neighbours[shell_id]:
+                            if i!=j and i not in self.panel_neighbours[j]:
+                                self.panel_neighbours[j].append(i)
             
             panels[-1].id = shell_id
                 
@@ -673,9 +689,13 @@ class PanelAeroMesh(AeroMesh, PanelMesh):
         for she_id in shells_ids["body"]:
             she = self.shells[she_id]
             if len(she) == 3:
+                shells_ids_new["body"].append(len(shells))
                 shells.append([she[0],dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[0],she[2]})]])
+                shells_ids_new["body"].append(len(shells))
                 shells.append([she[1],dic_edge[frozenset({she[1],she[2]})],dic_edge[frozenset({she[1],she[0]})]])
+                shells_ids_new["body"].append(len(shells))
                 shells.append([she[2],dic_edge[frozenset({she[2],she[0]})],dic_edge[frozenset({she[2],she[1]})]])
+                shells_ids_new["body"].append(len(shells))
                 shells.append([dic_edge[frozenset({she[0],she[1]})],dic_edge[frozenset({she[1],she[2]})],
                                dic_edge[frozenset({she[2],she[0]})]])
             if len(she) == 4:

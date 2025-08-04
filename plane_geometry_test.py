@@ -35,5 +35,7 @@ mesh2 = mesh.refinement()
 for panel_id in mesh2.TrailingEdge["suction side"]:
     mesh2.panels[panel_id].Cp = 1
 print(mesh2.wake_sheddingPanels)
+print(len(mesh2.shells_ids["body"]))
+print(len(shells_ids["wake"]))
 
-plot_Cp_SurfaceContours(mesh2.panels)
+# plot_Cp_SurfaceContours(mesh2.panels)

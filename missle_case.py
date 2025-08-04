@@ -8,7 +8,7 @@ from LSQ import lsq
 
 nodes = []
 shells = []
-with open("missle.obj","r") as filee:
+with open("model_normalized.obj","r") as filee:
     for line in filee:
         lst = line.split()
         if len(lst) == 0:
@@ -17,9 +17,11 @@ with open("missle.obj","r") as filee:
             x,y,z = [float(t) for t in lst[1:]]
             nodes.append((x,y,z))
         if lst[0] == "f":
-            a,b,c = [int(t.split("//")[0])-1 for t in lst[1:]]
+            a,b,c = [int(t.split("/")[0])-1 for t in lst[1:]]
             shells.append([a,b,c])
 print(1)
 mesh = PanelMesh(nodes,shells)
+print(len(mesh.panels))
+print(mesh.node_num)
 mesh.panels[0].Cp = 1
 plot_Cp_SurfaceContours(mesh.panels)

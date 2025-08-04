@@ -39,8 +39,10 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
         B, C = self.influence_coeff_matrices(mesh.panels)
         
         RHS = right_hand_side(mesh.panels, B)
+
+        doublet_strengths = np.zeros(mesh.panels_num)
         
-        doublet_strengths = np.linalg.solve(C, RHS)
+        doublet_strengths[mesh.non_zero_panel] = np.linalg.solve(C[mesh.non_zero_panel,mesh.non_zero_panel], RHS[mesh.non_zero_panel])
         
         for panel_id, panel in enumerate(mesh.panels):
             panel.mu = doublet_strengths[panel_id]
@@ -58,60 +60,6 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
             panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
-
-    def solve_new(self, mesh:PanelMesh):  # 这个函数还没有改对！！！不要使用！！！
-        
-        for panel in mesh.panels:
-            panel.sigma = source_strength(panel, self.V_fs) 
-        
-        B, C = self.influence_coeff_matrices(mesh.panels)
-        
-        RHS = right_hand_side(mesh.panels, B)
-        
-        doublet_strengths = np.linalg.solve(C, RHS)
-        
-        for panel_id, panel in enumerate(mesh.panels):
-            panel.mu = doublet_strengths[panel_id]
-        
-        V_fs_norm = self.V_fs.norm()
-        
-        for panel in mesh.panels:
-            ## 速度计算方法
-            # 把我们所有的panel对这个控制点的速度贡献全都加起来不就好了吗
-            # 它就是不知道问题出现在哪里啊
-            # 属于是前面根本就没有变化，我就改了这一步，他竟然就不对了??
-            # 别说Sphere了，hex的问题，都没有办法使得panel.Velocity * panel.n = 0
-            panel.Velocity = panel_velocity_new(panel, mesh, self.V_fs)            
-            
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-
-    def solve_newvelo(self, mesh:PanelMesh): # 这个函数还没有改对！！！不要使用！！！
-        # 这个函数的B,C和其他的几个并不一样，完全仿照二维的panel method进行的
-        # 但是他们不这么干可能也是有他们的道理，这个东西就不指望改对了吧
-        # 要说战绩，是能保证panel.Velocity * panel.n = 0,毕竟我方程列的就是这个
-        # 但是sphere和解析解对不上啊
-        for panel in mesh.panels:
-            panel.sigma = source_strength(panel, self.V_fs) 
-        
-        B, C = self.influence_velocoeff_matrices(mesh.panels)
-        
-        RHS = right_hand_side(mesh.panels, B)
-
-        for panel_id, panel in enumerate(mesh.panels):
-            RHS[panel_id] -= panel.n * self.V_fs
-        
-        doublet_strengths = np.linalg.solve(C, RHS)
-        
-        for panel_id, panel in enumerate(mesh.panels):
-            panel.mu = doublet_strengths[panel_id]
-        
-        V_fs_norm = self.V_fs.norm()
-        
-        for panel in mesh.panels:
-            
-            panel.Velocity = panel_velocity2(panel, mesh.give_neighbours(panel), self.V_fs)            
-            
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
     
     def solve2(self, mesh:PanelMesh):
         for panel in mesh.panels:
@@ -135,7 +83,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
             # 其实这个方法相对于前面的solve可能相对优胜一点，最起码可以把plane求解的不错。
             # 但是对于其他的问题不好保障欸
             panel_neighbours = mesh.give_neighbours3(panel, 3)
-            panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, self.V_fs, rcond = 1e-2)
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
     
@@ -247,9 +195,11 @@ class Steady_PanelMethod(PanelMethod):
         # VSAERO_onbody_analysis(self.V_fs, mesh)
         for panel_id in mesh.panels_ids["body"]:
             panel = mesh.panels[panel_id]
+            '''
             panel_neighbours = mesh.give_neighbours3(panel, 3)
             panel.Velocity = panel_velocity2(panel, panel_neighbours, self.V_fs, rcond = 1e-3)
-            
+            '''
+            panel.Velocity = panel_velocity(panel,mesh.give_neighbours(panel),V_fs)
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
         
     @staticmethod
@@ -397,18 +347,6 @@ def panel_velocity_apame(panel, panel_neighbours, V_fs):
     V = V_fs + V_disturb
     return V
 
-def panel_velocity_new(p, mesh, V_fs): 
-    # 这里采用的是精确速度求法，但是是错误的！！！
-    # 哪里错了呢??
-    V_disturb = Vector((0, 0, 0))
-
-    for panel in mesh.panels:
-        # 源面板贡献
-        V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
-        # 双极子面板贡献
-        V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
-
-    return V_fs + V_disturb
 
 def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
                           is_neighbour_2=True, is_neighbour_3=True, is_neighbour_4=True):
@@ -652,48 +590,6 @@ def VSAERO_onbody_analysis(V_fs:Vector, mesh:PanelAeroMesh):
             panel.Velocity = panel_velocity(panel, panel_neighbours, V_fs)
             
         panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-
-def body_induced_velocity(r_p, body_panels):
-    # Velocity calculation with disturbance velocity functions
-    
-    velocity = Vector((0, 0, 0))
-    
-    for panel in body_panels:
-
-        velocity = (velocity
-                    + Src_disturb_velocity(r_p, panel)
-                    + Dblt_disturb_velocity(r_p, panel))        
-    
-    return velocity
-
-def wake_induce_velocity(r_p, wake_panels):
-    """
-    Vortex ring panels handle distortion. In unsteady solution method, because of the wake roll-up, hence the distortion of the wake panels, we can use vortex rings or triangular panels to surpass this problem
-    """
-    velocity = Vector((0, 0, 0))
-    
-    for panel in wake_panels:
-
-        velocity = velocity + Vrtx_ring_induced_veloctiy(r_p, panel,
-                                                         core_size=0.3)
-    
-    return velocity
-
-def induced_velocity(r_p, body_panels, wake_panels=[]):
-    if wake_panels == []:
-        velocity = body_induced_velocity(r_p, body_panels)
-    else:
-        velocity = (body_induced_velocity(r_p, body_panels) 
-                    + wake_induce_velocity(r_p, wake_panels))
-    
-    return velocity
-          
-def Velocity(V_fs, r_p, body_panels, wake_panels=[]):
-    # Velocity calculation with disturbance velocity functions
-    
-    velocity = V_fs + induced_velocity(r_p, body_panels, wake_panels)
-      
-    return velocity
    
 if __name__ == "__main__":
     from mesh_class import PanelMesh

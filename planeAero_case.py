@@ -49,8 +49,8 @@ for j,m in enumerate(mu):
     mesh.panels[j].mu = m
 L = 0
 L_ref = 0
-for i,panel in enumerate(mesh.panels):
-    
+for i in mesh.shells_ids["body"]:
+    panel = mesh.panels[i]
     panel.sigma = -(panel.n * V_fs)
     neighbours = mesh.give_neighbours(panel)
     if len(neighbours) == 4:
@@ -74,10 +74,10 @@ for i,panel in enumerate(mesh.panels):
             panel.Velocity = VSAERO_panel_velocity(V_fs,panel,neighbours,ok[0],ok[1],ok[2],ok[3])
         else:
             panel_neighbours = mesh.give_neighbours3(panel,3)
-            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond = 1e-2)
     else:
             panel_neighbours = mesh.give_neighbours3(panel,3)
-            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond=1e-2)        
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, V_fs, rcond = 1e-2)        
             
     panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
 
