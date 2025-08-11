@@ -201,7 +201,7 @@ class triPanel(Panel): # 三角形panel面元
         r_31 = r_1 - r_3
         r_21 = r_1 - r_2
         cross_product = Vector.cross_product(r_21, r_31)
-        n = cross_product/cross_product.norm() if cross_product.norm != 0 else Vector((0,0,0))
+        n = cross_product/cross_product.norm() if cross_product.norm() != 0 else Vector((0,0,0))
         self.n = n
         self.area = cross_product.norm()/2
     

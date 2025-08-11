@@ -5,93 +5,182 @@ from PanelMethod3D.is_inside_polygon import is_inside_polygon
 # 几个函数都是参见Lothar的论文,第一个是对速度势的贡献,后两个是对速度的贡献。
 # 这里“贡献”指的都是单位大小的source/doublet面板对某个点处速度(势)的影响。
 
-def Dblt_influence_coeff(p_g:Vector, panel:Panel):
+def Dblt_influence_coeff(r_p:Vector, panel:Panel, alpha=10):
+    n = panel.num_vertices
+    r_vertex = panel.r_vertex_local
+    r_cp = panel.r_cp
+    R = panel.R 
     
-    C = 0
-    for k in range(panel.num_vertices):
-        k_next = (k+1)%(panel.num_vertices)
-        q_k = panel.r_vertex_local[k]
-        q_k_next = panel.r_vertex_local[k_next]
-
-        p_local = (p_g - panel.r_cp).transformation(panel.R)
-        x, y, z = p_local.x, p_local.y, p_local.z
+    r = r_p - r_cp
+    r_local = r.transformation(R)
+    r = r_local
+    
+    if r.norm() >= alpha * panel.char_length:
+        C = - 1/(4*np.pi) * ( panel.area * r.z)/(r.norm()**3)
+    
+    elif r.z == 0:
+        point = (r.x, r.y)  
+        polygon = [(r_vertex[i].x, r_vertex[i].y) for i in range(n)]
         
-        x_k, y_k = q_k.x, q_k.y
-        x_k_next, y_k_next = q_k_next.x, q_k_next.y
-
-        d_k = sqrt((x_k_next-x_k)**2+(y_k_next-y_k)**2)
-        if d_k == 0:
-            continue
-        e_k = (x-x_k)**2 + z**2
-        e_k_next = (x-x_k_next)**2 + z**2
-        h_k = (x-x_k)*(y-y_k)
-        h_k_next = (x-x_k_next)*(y-y_k_next)
-        m_k = (y_k_next-y_k)/(x_k_next-x_k) if x_k != x_k_next else float("inf")
-        r_k = sqrt((x-x_k)**2+(y-y_k)**2+z**2)
-        r_k_next = sqrt((x-x_k_next)**2+(y-y_k_next)**2+z**2)
-
-        termc = np.arctan((m_k*e_k-h_k)/(z*r_k)) - np.arctan((m_k*e_k_next-h_k_next)/(z*r_k_next)) if z!=0 else 0
-
-        C -= termc 
-    
-    if z == 0:
-        
-        point = (x,y)  
-        polygon = [(panel.r_vertex_local[i].x, panel.r_vertex_local[i].y) for i in range(panel.num_vertices)]
-    
         if is_inside_polygon(polygon, point):
-            # C =  2 * np.pi  # if z--> +0
-            C = -2 * np.pi  # if z--> -0
+            # point p lies on panel's surface as z-->0
+            # C = - 0.5  # if z--> +0
+            C = 0.5  # if z--> -0
         else:
+            # point p lies outside of panel's surface as z-->0
             C = 0
-    
-    C = - 1/(4 * np.pi) * C
+        
+    else:
+        C = 0
+        for i in range(n-1, -1, -1):
+            # panel numbering follow counter clock wise direction
+            # Hess and Smith integrals are calculated with clock wise ordering 
+            a = (i+1)%n  # 0, 3, 2, 1 (cw) (instead 0, 1, 2, 3 (cw))
+            b = i # 3, 2, 1, 0, (clock wise) (instead 1, 2, 3, 0 (cw))
+            
+            r_a = r - r_vertex[a]
+            r_a = r_a.norm()
+            r_b = r - r_vertex[b]
+            r_b = r_b.norm()   
+            
+            if (r_vertex[b].x - r_vertex[a].x) == 0:
+                m_ab = np.inf 
+            else:
+                m_ab = ( (r_vertex[b].y - r_vertex[a].y)
+                        /(r_vertex[b].x - r_vertex[a].x) )
+            
+            e_a = (r.x - r_vertex[a].x)**2 + r.z**2
+            e_b = (r.x - r_vertex[b].x)**2 + r.z**2
+            h_a = (r.x - r_vertex[a].x)*(r.y - r_vertex[a].y)
+            h_b = (r.x - r_vertex[b].x)*(r.y - r_vertex[b].y)
+            
+            arctan_term = ( np.arctan((m_ab*e_a - h_a)/(r.z*r_a))
+                           - np.arctan((m_ab*e_b - h_b)/(r.z*r_b)) )
+                
+            C = C + arctan_term
+            
+        C = - 1/(4*np.pi) * C
         
     return C
 
-def influence_coeff(p_g:Vector, panel:Panel):
-    B = 0
-    C = 0
-    for k in range(panel.num_vertices):
-        k_next = (k+1)%(panel.num_vertices)
-        q_k = panel.r_vertex_local[k]
-        q_k_next = panel.r_vertex_local[k_next]
-
-        p_local = (p_g - panel.r_cp).transformation(panel.R)
-        x, y, z = p_local.x, p_local.y, p_local.z
-        
-        x_k, y_k = q_k.x, q_k.y
-        x_k_next, y_k_next = q_k_next.x, q_k_next.y
-
-        d_k = sqrt((x_k_next-x_k)**2+(y_k_next-y_k)**2)
-        if d_k == 0:
-            continue
-        e_k = (x-x_k)**2 + z**2
-        e_k_next = (x-x_k_next)**2 + z**2
-        h_k = (x-x_k)*(y-y_k)
-        h_k_next = (x-x_k_next)*(y-y_k_next)
-        m_k = (y_k_next-y_k)/(x_k_next-x_k) if x_k != x_k_next else float("inf")
-        r_k = sqrt((x-x_k)**2+(y-y_k)**2+z**2)
-        r_k_next = sqrt((x-x_k_next)**2+(y-y_k_next)**2+z**2)
-
-        termb1 = ((x-x_k)*(y_k_next-y_k)-(y-y_k)*(x_k_next-x_k)) * np.log((r_k+r_k_next-d_k)/(r_k+r_k_next+d_k)) / d_k
-        termb2 = z*(np.arctan((m_k*e_k-h_k)/(z*r_k)) - np.arctan((m_k*e_k_next-h_k_next)/(z*r_k_next))) if z!=0 else 0
-        termc = np.arctan((m_k*e_k-h_k)/(z*r_k)) - np.arctan((m_k*e_k_next-h_k_next)/(z*r_k_next)) if z!=0 else 0
-
-        B += termb1 + termb2
-        C -= termc 
+def influence_coeff(r_p:Vector, panel:Panel, alpha=10):
+    n = panel.num_vertices
+    r_vertex = panel.r_vertex_local
+    r_cp = panel.r_cp
+    R = panel.R 
     
-    if z == 0:
+    r = r_p - r_cp
+    r_local = r.transformation(R)
+    r = r_local
+    
+    if r.norm() >= alpha * panel.char_length:
+        B = panel.area/r.norm()
+        C = ( panel.area * r.z)/(r.norm()**3)
+    
+    elif r.z == 0:
         
-        point = (x,y)  
-        polygon = [(panel.r_vertex_local[i].x, panel.r_vertex_local[i].y) for i in range(panel.num_vertices)]
+        point = (r.x, r.y)  
+        polygon = [(r_vertex[i].x, r_vertex[i].y) for i in range(n)]
     
         if is_inside_polygon(polygon, point):
+            # point p lies on panel's surface as z-->0
             # C =  2 * np.pi  # if z--> +0
             C = -2 * np.pi  # if z--> -0
+            
         else:
+            # point p lies outside of panel's surface as z-->0
             C = 0
-    
+        
+        B = 0
+        for i in range(n-1, -1, -1):
+            # panel numbering follow counter clock wise direction
+            # Hess and Smith integrals are calculated with clock wise ordering 
+            a = (i+1)%n  # 0, 3, 2, 1 (cw) (instead 0, 1, 2, 3 (cw))
+            b = i # 3, 2, 1, 0, (clock wise) (instead 1, 2, 3, 0 (cw))
+            
+            r_ab = r_vertex[b] - r_vertex[a]
+            d_ab = r_ab.norm()
+            r_a = r - r_vertex[a]
+            r_a = r_a.norm()
+            r_b = r - r_vertex[b]
+            r_b = r_b.norm()     
+            
+            first_term = (
+                (r.x - r_vertex[a].x) * (r_vertex[b].y - r_vertex[a].y)
+                - (r.y - r_vertex[a].y) * (r_vertex[b].x - r_vertex[a].x)
+                )
+            
+            first_term = first_term/d_ab
+            
+            if (r_a + r_b - d_ab) == 0:
+                # point p coincide lies on a panel's edge
+                # log term ---> inf => B ---> inf
+                log_term = 0
+        
+            else:
+                # katz & Plotkin
+                log_term = np.log((r_a + r_b + d_ab)/(r_a + r_b - d_ab))
+                
+                # paper of Lothar birk  
+                # log_term = np.log((r_a + r_b - d_ab)/(r_a + r_b + d_ab))
+                
+            B = B + first_term * log_term  
+                           
+    else:
+        B = 0
+        C = 0
+        for i in range(n-1, -1, -1):
+            # panel numbering follow counter clock wise direction
+            # Hess and Smith integrals are calculated with clock wise ordering 
+            a = (i+1)%n  # 0, 3, 2, 1 (cw) (instead 0, 1, 2, 3 (cw))
+            b = i # 3, 2, 1, 0, (clock wise) (instead 1, 2, 3, 0 (cw))
+            
+            r_ab = r_vertex[b] - r_vertex[a]
+            d_ab = r_ab.norm()
+            r_a = r - r_vertex[a]
+            r_a = r_a.norm()
+            r_b = r - r_vertex[b]
+            r_b = r_b.norm()          
+            
+            first_term = (
+                (r.x - r_vertex[a].x) * (r_vertex[b].y - r_vertex[a].y)
+                - (r.y - r_vertex[a].y) * (r_vertex[b].x - r_vertex[a].x)
+                )
+            
+            first_term = first_term/d_ab
+            
+            # katz & Plotkin
+            log_term = np.log((r_a + r_b + d_ab)/(r_a + r_b - d_ab))
+            
+            # paper of Lothar birk  
+            # log_term = np.log((r_a + r_b - d_ab)/(r_a + r_b + d_ab))  
+            
+            if (r_vertex[b].x - r_vertex[a].x) == 0:
+                m_ab = np.inf 
+            else:
+                m_ab = ( (r_vertex[b].y - r_vertex[a].y)
+                        /(r_vertex[b].x - r_vertex[a].x) )
+            
+            e_a = (r.x - r_vertex[a].x)**2 + r.z**2
+            e_b = (r.x - r_vertex[b].x)**2 + r.z**2
+            h_a = (r.x - r_vertex[a].x)*(r.y - r_vertex[a].y)
+            h_b = (r.x - r_vertex[b].x)*(r.y - r_vertex[b].y)
+            
+             
+            arctan_term = ( np.arctan((m_ab*e_a - h_a)/(r.z*r_a))
+                           - np.arctan((m_ab*e_b - h_b)/(r.z*r_b)) )
+     
+            
+            
+            # Katz & Plotkin            
+            # B = B + first_term * log_term - np.abs(r.z) * arctan_term
+            
+            # paper of Lothar birk            
+            B = B + first_term * log_term - r.z * arctan_term
+            
+            # Katz & Plotkin  
+            C = C + arctan_term 
+            
     B = - 1/(4 * np.pi) * B
     C = - 1/(4 * np.pi) * C
         

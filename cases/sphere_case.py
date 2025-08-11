@@ -1,10 +1,10 @@
 import numpy as np
-from vector_class import Vector
-from panel_method_class import Steady_Wakeless_PanelMethod
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_method_class import Steady_Wakeless_PanelMethod
 from matplotlib import pyplot as plt
-from plot_functions import plot_Cp_SurfaceContours
-from mesh_class import PanelMesh
-from sphere import sphere
+from PanelMethod3D.plot_functions import plot_Cp_SurfaceContours
+from PanelMethod3D.mesh_class import PanelMesh
+from cases.sphere import sphere
 
 
 radius = 1
@@ -17,7 +17,7 @@ mesh = PanelMesh(nodes, shells)
 
 V_fs = Vector((0,0,1))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve2(mesh)
+panel_method.solve_newvelo(mesh)
 
 
 saved_ids = []

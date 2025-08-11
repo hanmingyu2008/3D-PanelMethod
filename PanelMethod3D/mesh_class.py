@@ -133,7 +133,7 @@ class PanelMesh(Mesh):
         self.panels_num = None
         self.panel_neighbours = self.shell_neighbours
         # self.panel_neighbours2 = self.shell_neighbours2
-        self.non_zero_panel = []
+        # self.non_zero_panel = []
         self.CreatePanels()         
         
     def CreatePanels(self):
@@ -147,24 +147,12 @@ class PanelMesh(Mesh):
             if len(vertex) == 3:
                 panel = triPanel(vertex[0],vertex[1],vertex[2])
                 panels.append(panel)
-                if panel.area != 0:
-                    self.non_zero_panel.append(shell_id)
-                else:
-                    for i in self.panel_neighbours[shell_id]:
-                        for j in self.panel_neighbours[shell_id]:
-                            if i!=j and i not in self.panel_neighbours[j]:
-                                self.panel_neighbours[j].append(i)
+                
             elif len(vertex) == 4:
                 panel = quadPanel(vertex[0],vertex[1],vertex[2],vertex[3])
                 panels.append(panel)
-                if panel.area != 0:
-                    self.non_zero_panel.append(shell_id)
-                else:
-                    for i in self.panel_neighbours[shell_id]:
-                        for j in self.panel_neighbours[shell_id]:
-                            if i!=j and i not in self.panel_neighbours[j]:
-                                self.panel_neighbours[j].append(i)
-            
+                
+                
             panels[-1].id = shell_id
                 
         self.panels = panels
@@ -246,6 +234,37 @@ class PanelMesh(Mesh):
                 shells.append([she[2],dic_edge[frozenset({she[2],she[3]})],n,dic_edge[frozenset({she[2],she[1]})]])
                 shells.append([she[3],dic_edge[frozenset({she[3],she[0]})],n,dic_edge[frozenset({she[3],she[2]})]])
         return PanelMesh(newnodes,shells)
+    
+    def save(self,name):
+        with open(name+".pan","w") as filee:
+            print("# id starts from 0",file=filee)
+            print("# nodes",file=filee)
+            for x,y,z in self.nodes:
+                print("n",x,y,z,file=filee)
+            print("# panels",file=filee)
+            for id,shell in enumerate(self.shells):
+                if id in self.non_zero_panel:
+                    if len(shell) == 3:
+                        a,b,c = shell
+                        print("f3",a,b,c,file=filee)
+                    elif len(shell) == 4:
+                        a,b,c,d = shell
+                        print("f4",a,b,c,d,file=filee)
+                    else:
+                        raise Exception("len(shell) not in [3,4] !!!")
+                else:
+                    if len(shell) == 3:
+                        a,b,c = shell
+                        print("zf3",a,b,c,file=filee)
+                    elif len(shell) == 4:
+                        a,b,c,d = shell
+                        print("zf4",a,b,c,d,file=filee)
+                    else:
+                        raise Exception("len(shell) not in [3,4] !!!")
+            print("# neighbours",file=filee)
+            for id,shell in enumerate(self.shells):
+                lst = self.shell_neighbours[id]
+                print("n"," ".join([str(n) for n in lst]))
     
 class AeroMesh(Mesh):
     ## 现在我们希望可以自动判断trailing edge和sunction side等等

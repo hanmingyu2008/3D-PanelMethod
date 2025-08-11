@@ -1,42 +1,34 @@
 import numpy as np
-from vector_class import Vector
-from panel_method_class import Steady_Wakeless_PanelMethod
+from PanelMethod3D.vector_class import Vector
+from PanelMethod3D.panel_method_class import panel_velocity2,panel_velocity,panel_velocity3,Steady_Wakeless_PanelMethod
 from matplotlib import pyplot as plt
-from plot_functions import plot_savedCp_SurfaceContours
-from mesh_class import PanelMesh
+from PanelMethod3D.plot_functions import plot_savedCp_SurfaceContours,plot_Cp_SurfaceContours
+from PanelMethod3D.mesh_class import PanelMesh
+from PanelMethod3D.LSQ import lsq
+from fuckingdatacleaning import find_positive_faces
 
 nodes = []
 shells = []
-with open("导弹triangle.obj","r") as file:
-    ind = 0
-    for line in file:
-        if ind == 638:
-            pass
-        line = line.split()
-        if len(line)>0 and line[0] == "v":
-            x,y,z = [float(t) for t in line[1:]]
+temp = {}
+with open("hex.obj","r") as filee:
+    for line in filee:
+        lst = line.split()
+        if len(lst) == 0:
+            continue
+        if lst[0] == "v":
+            x,y,z = [float(t) for t in lst[1:]]
             nodes.append((x,y,z))
-        if len(line)>0 and line[0] == "f":
-            ix,iy,iz = line[1:]
-            ix,_ = [int(t) for t in ix.split("/")]
-            iy,_ = [int(t) for t in iy.split("/")]
-            iz,_ = [int(t) for t in iz.split("/")]
-            if ix*iy*iz == 0:
-                print(-1)
-            shells.append([ix-1,iy-1,iz-1])
-        ind += 1
-        print(ind)
-print(len(nodes))
+        if lst[0] == "f":
+            a,b,c = [int(t.split("/")[0])-1 for t in lst[1:]]
+            if a!=b and b!=c and c!=a:
+                shells.append([a,b,c])
+
 print(len(shells))
-
-Cp = []
-with open("Cp.txt","r") as file:
-    for line in file:
-        Cp.append(float(line))
-print(len(Cp))
-
-mesh = PanelMesh(nodes, shells)
-print(1)
-
-# Surface Contour plot
-plot_savedCp_SurfaceContours(mesh.panels, Cp, elevation=20, azimuth=45)
+lst = find_positive_faces(nodes,shells)
+print(lst)
+print(len(lst))
+mesh = PanelMesh(nodes,shells)
+# method = Steady_Wakeless_PanelMethod(Vector((0,0,1)))
+# method.solve(mesh)
+mesh.panels[lst[0]].Cp = 1
+plot_Cp_SurfaceContours([mesh.panels[i] for i in lst])
