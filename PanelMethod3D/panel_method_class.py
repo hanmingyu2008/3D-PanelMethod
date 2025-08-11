@@ -6,6 +6,7 @@ from PanelMethod3D.influence_coefficient_functions import compute_source_panel_v
 from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
 from PanelMethod3D.LSQ import LeastSquares,lsq
 from PanelMethod3D.apame import cal_velocity
+import time
 ## 最关键的函数了，这里面实现了多种用于求解势流问题的方法，包括solve和solve2等等
 # 这些方法各有千秋，其实并不算很难看懂，但我们也对每个函数都进行解释。
 # 部分solve们是参照README里面说的方法进行的，一直到计算出mu都是一摸一样，粘贴复制的。所以我们不再介绍这一部分了。
@@ -64,18 +65,21 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
     def solve2(self, mesh:PanelMesh):
         for panel in mesh.panels:
             panel.sigma = source_strength(panel, self.V_fs) 
-        
+        time1 = time.time()
         B, C = self.influence_coeff_matrices(mesh.panels)
-        
+        time2 = time.time()
+        print(f"Constructing Matrix Completed, time cost: {time2 - time1:.2f}",flush=True)
         RHS = right_hand_side(mesh.panels, B)
-        
+        time1 = time.time()
         doublet_strengths = np.linalg.solve(C, RHS)
+        time2 = time.time()
+        print(f"Solving Linear Equation Completed, time cost: {time2 - time1:.2f}",flush=True)
         
         for panel_id, panel in enumerate(mesh.panels):
             panel.mu = doublet_strengths[panel_id]
         
         V_fs_norm = self.V_fs.norm()
-        
+        time1 = time.time()
         for panel in mesh.panels:
             ## 速度计算方法
             # 把所有公共边邻居当中，法向量夹角比较小的三个(相当于是在曲面上还算平滑的几个邻居)取出来
@@ -86,6 +90,8 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
             panel.Velocity = panel_velocity3(panel, panel_neighbours, self.V_fs, rcond = 1e-2)
             
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
+        time2 = time.time()
+        print(f"Computing Velocity Completed, time cost: {time2 - time1:.2f}")
 
     def solve_newvelo(self, mesh:PanelMesh): # 这个函数还没有改对！！！不要使用！！！
         # 这个函数的B,C和其他的几个并不一样，完全仿照二维的panel method进行的

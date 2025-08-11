@@ -152,7 +152,8 @@ class PanelMesh(Mesh):
                 panel = quadPanel(vertex[0],vertex[1],vertex[2],vertex[3])
                 panels.append(panel)
                 
-                
+            if panels[-1].area == 0:
+                raise Exception("有面积为0的panel!!")    
             panels[-1].id = shell_id
                 
         self.panels = panels
