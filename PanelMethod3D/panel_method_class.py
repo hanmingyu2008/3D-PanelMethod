@@ -380,20 +380,6 @@ def panel_velocity_new(p, mesh, V_fs):
 
     return V_fs + V_disturb
 
-def panel_velocity_apame(panel, panel_neighbours, V_fs):
-    # 用apame.py里面的函数求解。其实仿照F90写的apame的代码,但是其实效果一般
-    ans = cal_velocity(panel, panel_neighbours, 1)
-    if ans == False:
-        raise Exception("速度计算有错误!")
-    a,b = ans
-    components = (-a, -b, panel.sigma)
-
-    V_disturb = Vector(components)
-    V_disturb = V_disturb.transformation(panel.R.T)
-    
-    V = V_fs + V_disturb
-    return V
-
 
 def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
                           is_neighbour_2=True, is_neighbour_3=True, is_neighbour_4=True):
