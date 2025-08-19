@@ -5,8 +5,10 @@ from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_i
 from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
 from PanelMethod3D.LSQ import LeastSquares,lsq
-from PanelMethod3D.apame import cal_velocity
+# from PanelMethod3D.apame import cal_velocity
 import time
+import multiprocessing as mp
+from itertools import product
 ## 最关键的函数了，这里面实现了多种用于求解势流问题的方法，包括solve和solve2等等
 # 这些方法各有千秋，其实并不算很难看懂，但我们也对每个函数都进行解释。
 # 部分solve们是参照README里面说的方法进行的，一直到计算出mu都是一摸一样，粘贴复制的。所以我们不再介绍这一部分了。
@@ -70,6 +72,7 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
         time2 = time.time()
         print(f"Constructing Matrix Completed, time cost: {time2 - time1:.2f}",flush=True)
         RHS = right_hand_side(mesh.panels, B)
+        print(np.linalg.det(C))
         time1 = time.time()
         doublet_strengths = np.linalg.solve(C, RHS)
         time2 = time.time()
@@ -97,29 +100,25 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
         # 这个函数的B,C和其他的几个并不一样，完全仿照二维的panel method进行的
         # 但是他们不这么干可能也是有他们的道理，这个东西就不指望改对了吧
         # 要说战绩，是能保证panel.Velocity * panel.n = 0,毕竟我方程列的就是这个
-        # 但是sphere和解析解对不上啊
-        for panel in mesh.panels:
-            panel.sigma = source_strength(panel, self.V_fs) 
+        # 但是sphere和解析解对不上啊 
         
-        B, C = self.influence_velocoeff_matrices(mesh.panels)
+        B = self.influence_velocoeff_matrices(mesh.panels)
         
-        RHS = right_hand_side(mesh.panels, B)
+        RHS = np.zeros(len(mesh.panels))
 
         for panel_id, panel in enumerate(mesh.panels):
             RHS[panel_id] -= panel.n * self.V_fs
         
-        doublet_strengths = np.linalg.solve(C, RHS)
+        source_strengths = np.linalg.solve(B, RHS)
         
         for panel_id, panel in enumerate(mesh.panels):
-            panel.mu = doublet_strengths[panel_id]
+            panel.sigma = source_strengths[panel_id]
         
         V_fs_norm = self.V_fs.norm()
         
         for panel in mesh.panels:
-            
-            panel.Velocity = panel_velocity2(panel, mesh.give_neighbours3(panel, 3), self.V_fs, rcond = 1e-2)            
-            
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
+            panel.Velocity = panel_velocity_new(panel,mesh,self.V_fs)
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm) ** 2
     
     @staticmethod
     def influence_coeff_matrices(panels):
@@ -139,9 +138,6 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
                 B[i][j], C[i][j] = influence_coeff(r_cp, panel_j)
                 
                 r_local = (r_cp - panel_j.r_cp).transformation(panel_j.R)
-                if r_local.z == 0:
-                    if i != j:
-                        print("网格大概是有点问题!")
                 
         return B, C
     
@@ -152,18 +148,17 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
         
         n = len(panels)
         B = np.zeros((n, n))
-        C = np.zeros_like(B)
         
         for i, panel_i in enumerate(panels):
             
             r_cp = panel_i.r_cp
             
+            # loop all over panels
             for j, panel_j in enumerate(panels):
                 
-                B[i][j] = compute_source_panel_velocity(r_cp, panel_j, 1) * panel_i.n
-                C[i][j] = compute_dipole_panel_velocity(r_cp, panel_j, 1) * panel_i.n
-                
-        return B, C
+                B[i][j] = compute_source_panel_velocity(r_cp, panel_j, 1.0) * panel_i.n
+
+        return B
     
 class Steady_PanelMethod(PanelMethod):
     
@@ -377,9 +372,11 @@ def panel_velocity_new(p, mesh, V_fs):
 
     for panel in mesh.panels:
         # 源面板贡献
-        V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
+        if panel.sigma != 0:
+            V_disturb += compute_source_panel_velocity(p.r_cp, panel, panel.sigma)
         # 双极子面板贡献
-        V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
+        if panel.mu != 0:
+            V_disturb += compute_dipole_panel_velocity(p.r_cp, panel, panel.mu)
 
     return V_fs + V_disturb
 

@@ -204,6 +204,18 @@ def compute_source_panel_velocity(p_g: Vector, panel: Panel, sigma: float) -> Ve
     # 1. 将场点转换到面板局部坐标系
     p_local = (p_g - panel.r_cp).transformation(panel.R)
     x, y, z = p_local.x, p_local.y, p_local.z
+
+    alpha = float("inf")
+
+    if p_local.norm() >= alpha * panel.char_length:
+        
+        u = sigma/(4*np.pi) * panel.area * x/(p_local.norm()**3)
+        v = sigma/(4*np.pi) * panel.area * y/(p_local.norm()**3)
+        w = sigma/(4*np.pi) * panel.area * z/(p_local.norm()**3)
+
+        disturb_velocity_local = Vector((u, v, w))
+
+        return disturb_velocity_local.transformation(panel.R.T)
     '''
     if z == 0:
         point = (x,y)  
@@ -296,6 +308,20 @@ def compute_dipole_panel_velocity(p_g: Vector, panel: Panel, mu: float) -> Vecto
     # 1. 将场点转换到面板局部坐标系
     p_local = (p_g - panel.r_cp).transformation(panel.R)
     x, y, z = p_local.x, p_local.y, p_local.z
+
+    alpha = float("inf")
+
+    if p_local.norm() >= alpha * panel.char_length:
+    
+        u =  3/(4*np.pi) * panel.mu * panel.area * (x * z)/(p_local.norm()**5)
+        v = 3/(4*np.pi) * panel.mu * panel.area * (y * z)/(p_local.norm()**5)
+        w = ( -1/(4*np.pi) * panel.mu * panel.area 
+             * (x**2 + y**2 - 2 * z**2)/(p_local.norm()**5))
+        
+        disturb_velocity_local = Vector((u, v, w))
+        disturb_velocity = disturb_velocity_local.transformation(panel.R.T)
+
+        return disturb_velocity
     
     # 2. 初始化速度分量
     psi_x = 0.0

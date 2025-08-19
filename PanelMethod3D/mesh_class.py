@@ -153,6 +153,7 @@ class PanelMesh(Mesh):
                 panels.append(panel)
                 
             if panels[-1].area == 0:
+                print(len(panels))
                 raise Exception("有面积为0的panel!!")    
             panels[-1].id = shell_id
                 

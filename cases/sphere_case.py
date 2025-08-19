@@ -7,8 +7,9 @@ from PanelMethod3D.mesh_class import PanelMesh
 from cases.sphere import sphere
 
 
+
 radius = 1
-num_longitude, num_latitude = 20, 21
+num_longitude, num_latitude = 22,21
 nodes, shells = sphere(radius, num_longitude, num_latitude,
                                     mesh_shell_type='quadrilateral')
 
@@ -17,7 +18,7 @@ mesh = PanelMesh(nodes, shells)
 
 V_fs = Vector((0,0,1))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve2(mesh)
+panel_method.solve_newvelo(mesh)
 
 
 saved_ids = []

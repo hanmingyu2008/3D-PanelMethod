@@ -17,15 +17,15 @@ def Src_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
     
     if r.norm() >= alpha * panel.char_length:
         
-        u = panel.sigma/(4*np.pi) * panel.area * r.x/(r.norm()**3)
-        v = panel.sigma/(4*np.pi) * panel.area * r.y/(r.norm()**3)
-        w = panel.sigma/(4*np.pi) * panel.area * r.z/(r.norm()**3)
+        u = 1 /(4*np.pi) * panel.area * r.x/(r.norm()**3)
+        v = 1 /(4*np.pi) * panel.area * r.y/(r.norm()**3)
+        w = 1 /(4*np.pi) * panel.area * r.z/(r.norm()**3)
     
     elif r.norm() == 0:
         # point p coincide with centroid (control point)
         u = 0
         v = 0
-        w = 0.5 * panel.sigma
+        w = 0.5 * 1
         
     elif r.z == 0 or abs(r.z) <= 10**(-12):
         point = (r.x, r.y)  
@@ -66,8 +66,8 @@ def Src_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
             v = v + (r_vertex[a].x - r_vertex[b].x)/d_ab * log_term
         
         # Katz & Plotkin    
-        u = panel.sigma/(4*np.pi) * u
-        v = panel.sigma/(4*np.pi) * v
+        u = 1 /(4*np.pi) * u
+        v = 1 /(4*np.pi) * v
         
         # paper of Lothar birk 
         # u = - panel.sigma/(4*np.pi) * u
@@ -110,9 +110,9 @@ def Src_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
                         - np.arctan((m_ab * e_b - h_b)/(r.z * r_b))  )
         
         # Katz & Plotkin     
-        u = panel.sigma/(4*np.pi) * u
-        v = panel.sigma/(4*np.pi) * v           
-        w = panel.sigma/(4*np.pi) * w
+        u = 1 /(4*np.pi) * u
+        v = 1 /(4*np.pi) * v           
+        w = 1 /(4*np.pi) * w
         
         # paper of Lothar birk 
         # u = - panel.sigma/(4*np.pi) * u
@@ -139,9 +139,9 @@ def Dblt_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
     
     if r.norm() >= alpha * panel.char_length:
     
-        u =  3/(4*np.pi) * panel.mu * panel.area * (r.x * r.z)/(r.norm()**5)
-        v = 3/(4*np.pi) * panel.mu * panel.area * (r.y * r.z)/(r.norm()**5)
-        w = ( -1/(4*np.pi) * panel.mu * panel.area 
+        u =  3/(4*np.pi) * panel.area * (r.x * r.z)/(r.norm()**5)
+        v = 3/(4*np.pi) * panel.area * (r.y * r.z)/(r.norm()**5)
+        w = ( -1/(4*np.pi) * panel.area 
              * (r.x**2 + r.y**2 - 2 * r.z**2)/(r.norm()**5))
         
     elif r.z==0 or abs(r.z)<=10**(-12) and is_inside_polygon(polygon, point):
@@ -178,7 +178,7 @@ def Dblt_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
                 w = w + numerator/denominator
             
                
-        w = 1/(4*np.pi) * panel.mu * w
+        w = 1/(4*np.pi) * w
         
     else:
         u, v, w = 0, 0, 0
@@ -213,9 +213,9 @@ def Dblt_disturb_velocity(r_p:Vector, panel:Panel, alpha=10):
                          * (r_a + r_b) )
             w = w + numerator/denominator
         
-        u = 1/(4*np.pi) * panel.mu * u
-        v = 1/(4*np.pi) * panel.mu * v
-        w = 1/(4*np.pi) * panel.mu * w
+        u = 1/(4*np.pi) * u
+        v = 1/(4*np.pi) * v
+        w = 1/(4*np.pi) * w
        
     disturb_velocity_local = Vector((u, v, w))
     disturb_velocity = disturb_velocity_local.transformation(R.T)
