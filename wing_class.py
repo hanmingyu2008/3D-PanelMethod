@@ -1,6 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
-def Wing(filename, length, num, typa = "quad"):
+
+def Wing(filename, length, num, typa = "quad", filled = False):
+    # file第一行：名字，譬如 NACA 0012
+    # file第二行开始每行两个浮点数作为一个节点的坐标，逆时针排列。另外，第一个和最后一个需要一样！
     coor = []
     lines = []
     with open("coord_seligFmt/"+filename,"r") as filee:
@@ -9,6 +12,7 @@ def Wing(filename, length, num, typa = "quad"):
     print(lines[0])
     for line in lines[1:]:
         coor.append(tuple([float(x) for x in line.split()]))
+
     plt.plot([x for x,z in coor],[z for x,z in coor], 'ks-', markersize=1, linewidth=1.5)
     plt.show()
     m = len(coor) - 1
@@ -19,7 +23,7 @@ def Wing(filename, length, num, typa = "quad"):
     ylist = list(np.linspace(0,length,num+1))
     nodes = []
     for y in ylist:
-        for x,z in coor:
+        for x,z in coor[:-1]:
             nodes.append((x,y,z))
     
     l = m // 2
@@ -41,14 +45,14 @@ def Wing(filename, length, num, typa = "quad"):
     if typa == "quad":
         for i in range(num):
             for k in range(m):
-                k_next = (k+1) 
-                shells.append([(i+1)*(m+1)+k,(i+1)*(m+1)+k_next,i*(m+1)+k_next,i*(m+1)+k])
+                k_next = (k+1) % m
+                shells.append([(i+1)*m+k,(i+1)*m+k_next,i*m+k_next,i*m+k])
     elif typa == "tri":
         for i in range(num):
             for k in range(m):
-                k_next = (k+1) 
-                shells.append([(i+1)*(m+1)+k,(i+1)*(m+1)+k_next,i*(m+1)+k_next])
-                shells.append([i*(m+1)+k,(i+1)*(m+1)+k,i*(m+1)+k_next])
+                k_next = (k+1) % m
+                shells.append([(i+1)*m+k,(i+1)*m+k_next,i*m+k_next])
+                shells.append([i*m+k,(i+1)*m+k,i*m+k_next])
     else:
         raise Exception("你这个类型我没听过欸")
     
@@ -74,8 +78,54 @@ def Wing(filename, length, num, typa = "quad"):
     
     mid = num // 2
     shells_to_show = list(range(mid*m,(mid+1)*m))
+    if filled:
+        return nodes,shells,shells_to_show
+    else:
+        return nodes[:m*(num+1)],shells[:m*num],shells_to_show
+    
+def Wing2(filename, length, num, typa = "quad"):
+    # 这个和上面那个本质的差别就是不封口，自然而然也不会出现第一个和最后一个是重复的
+    coor = []
+    lines = []
+    with open("coord_seligFmt/"+filename,"r") as filee:
+        for line in filee:
+            lines.append(line)
+    print(lines[0])
+    for line in lines[1:]:
+        coor.append(tuple([float(x) for x in line.split()]))
 
-    return nodes,shells[:num*m],shells_to_show
+    plt.plot([x for x,z in coor],[z for x,z in coor], 'ks-', markersize=1, linewidth=1.5)
+    plt.show()
+    m = len(coor)
+    
+    
+    ylist = list(np.linspace(0,length,num+1))
+    nodes = []
+    for y in ylist:
+        for x,z in coor:
+            nodes.append((x,y,z))
+    
+    
+    shells = []
+    if typa == "quad":
+        for i in range(num):
+            for k in range(m-1):
+                k_next = (k+1) 
+                shells.append([(i+1)*m+k,(i+1)*m+k_next,i*m+k_next,i*m+k])
+    elif typa == "tri":
+        for i in range(num):
+            for k in range(m-1):
+                k_next = (k+1) 
+                shells.append([(i+1)*m+k,(i+1)*m+k_next,i*m+k_next])
+                shells.append([i*m+k,(i+1)*m+k,i*m+k_next])
+    else:
+        raise Exception("你这个类型我没听过欸")
+    
+    
+    mid = num // 2
+    shells_to_show = list(range(mid*m,(mid+1)*m))
+    
+    return nodes[:m*(num+1)],shells[:m*num],shells_to_show
 
 def calculate_projection(A, B, C):
     """

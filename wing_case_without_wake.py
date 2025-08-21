@@ -26,9 +26,6 @@ for id in shells_to_show:
     xlist.append(mesh.panels[id].r_cp.x)
     Cplist.append(mesh.panels[id].Cp)
 
-print(xlist)
-print(Cplist)
-
 plt.plot(xlist, Cplist, 'ks--', markerfacecolor='r', label='Panel Method')
 plt.legend()
 plt.grid()

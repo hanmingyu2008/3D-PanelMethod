@@ -1,7 +1,7 @@
 import numpy as np
 from PanelMethod3D.vector_class import Vector
 from PanelMethod3D.disturbance_velocity_functions import Dblt_disturb_velocity,Src_disturb_velocity,Vrtx_ring_induced_veloctiy
-from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_influence_coeff
+from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_influence_coeff,compute_source_grouppanel_velocity
 from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
 from PanelMethod3D.LSQ import LeastSquares,lsq
@@ -115,10 +115,23 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
             panel.sigma = source_strengths[panel_id]
         
         V_fs_norm = self.V_fs.norm()
-        
+
         for panel in mesh.panels:
             panel.Velocity = panel_velocity_new(panel,mesh,self.V_fs)
-            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm) ** 2
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm) ** 2 
+
+    def solve_newvelo_group(self, mesh:PanelMesh):
+
+        B,RHS = self.influence_velocoeff_group_matrices_memory(mesh, self.V_fs)
+        
+        source_strengths = np.linalg.solve(B, RHS)
+        
+        for panel_id, panel in enumerate(mesh.panels):
+            panel.sigma = source_strengths[panel_id]
+        
+        V_fs_norm = self.V_fs.norm()       
+
+        panel_velocity_group_onlysource(mesh, self.V_fs)
     
     @staticmethod
     def influence_coeff_matrices(panels):
@@ -159,6 +172,27 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
                 B[i][j] = compute_source_panel_velocity(r_cp, panel_j, 1.0) * panel_i.n
 
         return B
+    
+    @staticmethod
+    def influence_velocoeff_group_matrices_memory(mesh:PanelMesh, V_fs:Vector):
+        Coor = np.zeros((3,mesh.panels_num))
+        Eta = np.zeros((3,mesh.panels_num))
+        for i,panel in enumerate(mesh.panels):
+            Coor[0,i] = panel.r_cp.x
+            Coor[1,i] = panel.r_cp.y
+            Coor[2,i] = panel.r_cp.z
+            Eta[0,i] = panel.n.x
+            Eta[1,i] = panel.n.y
+            Eta[2,i] = panel.n.z
+        B = np.zeros((mesh.panels_num,mesh.panels_num))
+        for i,panel in enumerate(mesh.panels):
+            B[:,i] = np.einsum("ij,ij->j",Eta,compute_source_grouppanel_velocity(Coor,panel))
+        
+        rhs = np.zeros(mesh.panels_num)
+        rhs = - Eta[0] * V_fs.x - Eta[1] * V_fs.y - Eta[2] * V_fs.z
+        
+        return B,rhs
+        
     
 class Steady_PanelMethod(PanelMethod):
     
@@ -381,246 +415,24 @@ def panel_velocity_new(p, mesh, V_fs):
     return V_fs + V_disturb
 
 
-def VSAERO_panel_velocity(V_fs, panel, panel_neighbours, is_neighbour_1=True,
-                          is_neighbour_2=True, is_neighbour_3=True, is_neighbour_4=True):
-    
-    """
-    表面速度计算函数, 记号参见 NASA Contractor Report 4023 "Program VSAERO theory Document,
-    A Computer Program for Calculating Nonlinear Aerodynamic Characteristics
-    of Arbitrary Configurations, Brian Maskew"
-    
-    页码 48-50 和 23-25
-    """    
-          
-    if is_neighbour_1 and is_neighbour_3:
-        
-        neighbour_1 = panel_neighbours[0]
-        neighbour_3 = panel_neighbours[2]
-        
-        panel_j_minus1 = neighbour_1
-        panel_j_plus1 = neighbour_3
-        
-        if panel_j_minus1.num_vertices == 3:
-            panel_j_minus1.SMQ = (panel_j_minus1.r_cp - (panel.r_vertex[0]+panel.r_vertex[1])/2).norm()
-        if panel_j_plus1.num_vertices == 3:
-            panel_j_plus1.SMQ = (panel_j_plus1.r_cp - (panel.r_vertex[2]+panel.r_vertex[3])/2).norm()
+def panel_velocity_group_onlysource(mesh:PanelMesh, V_fs): 
+    # 这里采用的是精确速度求法，但是是错误的！！！
+    # 哪里错了呢??
+    V_disturb = np.zeros((3,mesh.panels_num))
+    V_disturb[0] += V_fs.x
+    V_disturb[1] += V_fs.y
+    V_disturb[2] += V_fs.z
 
-        x1 = 0
-        x0 = x1 - panel.SMQ - panel_j_minus1.SMQ
-        x2 = x1 + panel.SMQ + panel_j_plus1.SMQ
-        mu0 = panel_j_minus1.mu
-        mu1 = panel.mu
-        mu2 = panel_j_plus1.mu
-        
-        DELQ = mu0 * (x1 - x2)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (2*x1 - x0 - x2)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (x1 - x0)/(x2 - x0)/(x2 - x1)
-                
-    elif is_neighbour_1:
-        neighbour_1 = panel_neighbours[0]
-        neighbour_3 = panel_neighbours[2]
-        panel_j_minus1 = neighbour_1
-        panel_j_minus2 = neighbour_3
+    Coor = np.zeros_like(V_disturb)
+    for i,panel in enumerate(mesh.panels):
+            Coor[0,i] = panel.r_cp.x
+            Coor[1,i] = panel.r_cp.y
+            Coor[2,i] = panel.r_cp.z
 
-        if panel_j_minus1.num_vertices == 3:
-            raise Exception("这是不可以的!1")
-        if panel_j_minus2.num_vertices == 3:
-            raise Exception("这是不可以的!2") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
-        
-        x2 = 0
-        x1 = x2 - panel.SMQ - panel_j_minus1.SMQ
-        x0 = x1  - panel_j_minus1.SMQ - panel_j_minus2.SMQ
-        
-        mu0 = panel_j_minus2.mu
-        mu1 = panel_j_minus1.mu
-        mu2 = panel.mu
-        
-        DELQ = mu0 * (x2 - x1)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (x2 - x0)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (2*x2 - x0 - x1)/(x2 - x0)/(x2 - x1)
-    
-    elif is_neighbour_3:
-        neighbour_1 = panel_neighbours[0]
-        neighbour_3 = panel_neighbours[2]
-        panel_j_plus1 = neighbour_3
-        panel_j_plus2 = neighbour_1
-
-        if panel_j_plus1.num_vertices == 3:
-            raise Exception("这是不可以的!3")
-        if panel_j_plus2.num_vertices == 3:
-            raise Exception("这是不可以的!4") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
-        
-        x0 = 0
-        x1 = x0 + panel.SMQ + panel_j_plus1.SMQ
-        x2 = x1 + panel_j_plus1.SMQ + panel_j_plus2.SMQ
-        
-        mu0 = panel.mu
-        mu1 = panel_j_plus1.mu
-        mu2 = panel_j_plus2.mu
-        
-        DELQ = mu0 * (2*x0 - x1 - x2)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (x0 - x2)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (x0 - x1)/(x2 - x0)/(x2 - x1)
-    
-    
-    if is_neighbour_2 and is_neighbour_4:
-        neighbour_2, neighbour_4 = panel_neighbours[1], panel_neighbours[3]
-        
-        panel_i_minus1 = neighbour_4
-        panel_i_plus1 = neighbour_2
-
-        if panel_i_minus1.num_vertices == 3:
-            panel_i_minus1.SMP = (panel_i_minus1.r_cp - (panel.r_vertex[1]+panel.r_vertex[2])/2).norm()
-        if panel_i_plus1.num_vertices == 3:
-            panel_i_plus1.SMP = (panel_i_plus1.r_cp - (panel.r_vertex[3]+panel.r_vertex[0])/2).norm()
-        
-        x1 = 0
-        x0 = x1 - panel.SMP - panel_i_minus1.SMP
-        x2 = x1 + panel.SMP + panel_i_plus1.SMP
-        
-        mu0 = panel_i_minus1.mu
-        mu1 = panel.mu
-        mu2 = panel_i_plus1.mu
-        
-        DELP = mu0 * (x1 - x2)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (2*x1 - x0 - x2)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (x1 - x0)/(x2 - x0)/(x2 - x1)
-                
-    elif is_neighbour_2:
-        neighbour_2, neighbour_4 = panel_neighbours[1], panel_neighbours[3]
-        
-        panel_i_plus1 = neighbour_2
-        panel_i_plus2 = neighbour_4
-
-        if panel_i_plus1.num_vertices == 3:
-            raise Exception("这是不可以的!5")
-        if panel_i_plus2.num_vertices == 3:
-            raise Exception("这是不可以的!6") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
-        
-        x0 = 0
-        x1 = x0 + panel.SMP + panel_i_plus1.SMP
-        x2 = x1 + panel_i_plus1.SMP + panel_i_plus2.SMP
-        
-        mu0 = panel.mu
-        mu1 = panel_i_plus1.mu
-        mu2 = panel_i_plus2.mu
-        
-        DELP = mu0 * (2*x0 - x1 - x2)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (x0 - x2)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (x0 - x1)/(x2 - x0)/(x2 - x1)
-    
-    elif is_neighbour_4:
-        neighbour_2, neighbour_4 = panel_neighbours[1], panel_neighbours[3]
-        
-        panel_i_minus1 = neighbour_4
-        panel_i_minus2 = neighbour_2
-
-        if panel_i_minus1.num_vertices == 3:
-            raise Exception("这是不可以的!7")
-        if panel_i_minus2.num_vertices == 3:
-            raise Exception("这是不可以的!8") # 其实这种情况是可以的,但是我感觉这个代码有点难写就偷懒了蛤
-        
-        x2 = 0
-        x1 = x2 - panel.SMP - panel_i_minus1.SMP
-        x0 = x1 - panel_i_minus1.SMP - panel_i_minus2.SMP
-        
-        mu0 = panel_i_minus2.mu
-        mu1 = panel_i_minus1.mu
-        mu2 = panel.mu
-        
-        DELP = mu0 * (x2 - x1)/(x0 - x1)/(x0 - x2) \
-                + mu1 * (x2 - x0)/(x1 - x0)/(x1 - x2) \
-                + mu2 * (2*x2 - x0 - x1)/(x2 - x0)/(x2 - x1)
-    
-    
-    
-    T = panel.T
-    T = T.transformation(panel.R)
-    TM = T.y
-    TL = T.x
-    
-    VL = - (panel.SMP * DELP - TM * DELQ)/TL 
-    VM = - DELQ
-    VN = panel.sigma
-    
-    Vl, Vm, Vn = VL, VM, VN
-    
-    V_disturb_local = Vector((Vl, Vm, Vn))
-    V_disturb = V_disturb_local.transformation(panel.R.T)
-    
-    V = V_fs + V_disturb
-    
-    
-    return V
-
-def VSAERO_onbody_analysis(V_fs:Vector, mesh:PanelAeroMesh):
-    
-    mesh.locate_VSAERO_adjacency()
-    
-    body_panels = [mesh.panels[id] for id in mesh.panels_ids["body"]]
-    
-    V_fs_norm = V_fs.norm()
-    
-    for panel in body_panels:
-        
-        if len(mesh.shell_neighbours[panel.id])==4:
-            # 4个邻居都存在，那么就使用VSAERO的方法计算速度
-            panel_neighbours = mesh.give_neighbours(panel)
-            panel.Velocity = VSAERO_panel_velocity(
-                V_fs, panel, panel_neighbours
-            )
-                                
-        elif len(mesh.shell_neighbours[panel.id])>4:
-            # 要是邻居个数大于4了，那么根本不用思考，肯定是出了问题
-            # 因为我们只考虑三角形和四边形panel
-            # 那么就只需要修正一下就好啦
-            neighbours_ids = []
-            i = 4
+    for panel in mesh.panels:
             
-            if mesh.shell_neighbours[panel.id][0] == -1:
-                is_neighbour_1 = False
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][i])
-                i = i + 1
-            else:
-                is_neighbour_1 = True
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][0])
-                
-            if mesh.shell_neighbours[panel.id][1] == -1:
-                is_neighbour_2 = False
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][i])
-                i = i + 1
-            else:
-                is_neighbour_2 = True
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][1])
-                
-            if mesh.shell_neighbours[panel.id][2] == -1:
-                is_neighbour_3 = False
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][i])
-                i = i + 1
-            else:
-                is_neighbour_3 = True
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][2])
-                
-            if mesh.shell_neighbours[panel.id][3] == -1:
-                is_neighbour_4 = False
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][i])
-            else:
-                is_neighbour_4 = True
-                neighbours_ids.append(mesh.shell_neighbours[panel.id][3])
-            
-            mesh.shell_neighbours[panel.id] = neighbours_ids
-            panel_neighbours = mesh.give_neighbours(panel)
-            
-            
-            panel.Velocity = VSAERO_panel_velocity(
-                V_fs, panel, panel_neighbours, is_neighbour_1,
-                is_neighbour_2, is_neighbour_3, is_neighbour_4
-            )
-                            
-        else:
-            # 要是邻居的个数不太够，那么使用最小二乘法很棒
-            panel_neighbours = mesh.give_neighbours(panel)
-            panel.Velocity = panel_velocity(panel, panel_neighbours, V_fs)
-            
-        panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2
-        
+            V_disturb += panel.sigma * compute_source_grouppanel_velocity(Coor,panel)
+
+    for i in range(mesh.panels_num):
+        mesh.panels[i].Velocity = Vector((V_disturb[0,i],V_disturb[1,i],V_disturb[2,i]))    
+        mesh.panels[i].Cp = 1 - (mesh.panels[i].Velocity.norm()/V_fs.norm())**2   

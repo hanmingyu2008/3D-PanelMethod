@@ -2,14 +2,14 @@
 对于一个.ply的表面网格文件,当我们求出Cp值之后可以把它作为.ply文件里面的face quality写进去,以便在MeshLab中可视化观察
 '''
 
-filename = "plane_0001_cfd"
+filename = "merged_surfaces_inter_mesh_2"
 lines = []
 with open(filename+".ply","r") as filee:
     for line in filee:
         lines.append(line)
 ind = lines.index("end_header\n")
-a = 10386 
-b = 20632
+a = 20972
+b = 41940
 
 Cp = []
 with open(filename+"_Cp.txt","r") as filee:
