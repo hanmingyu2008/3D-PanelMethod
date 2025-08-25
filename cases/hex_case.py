@@ -16,7 +16,7 @@ mesh = mesh.refinement()
 
 V_fs = Vector((1, 0, 0))
 panel_method = Steady_Wakeless_PanelMethod(V_fs)
-panel_method.solve_newvelo(mesh)
+panel_method.solve2_group(mesh)
 
 q = Vector((0,0,2))
 v = Vector((0,0,0))
@@ -24,7 +24,7 @@ v = Vector((0,0,0))
 # print([panel.sigma for panel in mesh.panels])
 # print([panel.mu for panel in mesh.panels])
 # print([panel.Velocity * panel.n for panel in mesh.panels])
-print([panel.Cp for panel in mesh.panels])
+# print([panel.Cp for panel in mesh.panels])
 
 # Surface Contour plot
 # plot_Cp_SurfaceContours(mesh.panels, elevation=20, azimuth=45)

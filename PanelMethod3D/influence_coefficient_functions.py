@@ -186,6 +186,87 @@ def influence_coeff(r_p:Vector, panel:Panel, alpha=10):
         
     return B, C
 
+def influence_group_coeff(Coor: Vector, panel: Panel):
+    _,m = Coor.shape
+    r_vertex = panel.r_vertex_local
+    r_cp = panel.r_cp
+    R = panel.R 
+    
+    r = Coor.copy()
+    r[0] -= panel.r_cp.x
+    r[1] -= panel.r_cp.y
+    r[2] -= panel.r_cp.z
+    r = R @ r 
+                           
+    B = np.zeros((1,m))
+    C = np.zeros((1,m))
+    n = panel.num_vertices
+    for i in range(n-1, -1, -1):
+            # panel numbering follow counter clock wise direction
+            # Hess and Smith integrals are calculated with clock wise ordering 
+            a = (i+1)%n  # 0, 3, 2, 1 (cw) (instead 0, 1, 2, 3 (cw))
+            b = i # 3, 2, 1, 0, (clock wise) (instead 1, 2, 3, 0 (cw))
+            
+            r_ab = r_vertex[b] - r_vertex[a]
+            d_ab = r_ab.norm()
+            r_a = np.sqrt((r[0]-r_vertex[a].x)**2 + (r[1]-r_vertex[a].y)**2 + (r[2])**2)
+            r_b = np.sqrt((r[0]-r_vertex[b].x)**2 + (r[1]-r_vertex[b].y)**2 + (r[2])**2)         
+            
+            first_term = (
+                (r[0] - r_vertex[a].x) * (r_vertex[b].y - r_vertex[a].y)
+                - (r[1] - r_vertex[a].y) * (r_vertex[b].x - r_vertex[a].x)
+                )
+            
+            first_term = first_term/d_ab
+            
+            # katz & Plotkin
+            log_term = np.log((r_a + r_b + d_ab)/(r_a + r_b - d_ab))
+            
+            # paper of Lothar birk  
+            # log_term = np.log((r_a + r_b - d_ab)/(r_a + r_b + d_ab))  
+            
+            if (r_vertex[b].x - r_vertex[a].x) == 0:
+                m_ab = np.inf 
+            else:
+                m_ab = ( (r_vertex[b].y - r_vertex[a].y)
+                        /(r_vertex[b].x - r_vertex[a].x) )
+            
+            e_a = (r[0] - r_vertex[a].x)**2 + r[2]**2
+            e_b = (r[0] - r_vertex[b].x)**2 + r[2]**2
+            h_a = (r[0] - r_vertex[a].x)*(r[1] - r_vertex[a].y)
+            h_b = (r[0] - r_vertex[b].x)*(r[1] - r_vertex[b].y)
+            
+            with np.errstate(divide = "ignore",invalid = "ignore"): 
+                arctan_term = ( np.arctan((m_ab*e_a - h_a)/(r[2]*r_a))
+                                - np.arctan((m_ab*e_b - h_b)/(r[2]*r_b)) )
+     
+            
+            
+            # Katz & Plotkin            
+            # B = B + first_term * log_term - np.abs(r.z) * arctan_term
+            
+            # paper of Lothar birk            
+            B = B + first_term * log_term - r[2] * arctan_term
+            
+            # Katz & Plotkin  
+            C = C + arctan_term 
+    for i in range(m):
+        z = r[2,i]
+        if z == 0:
+        
+            point = (r[0,i], r[1,i])  
+            polygon = [(r_vertex[i].x, r_vertex[i].y) for i in range(n)]
+        
+            if is_inside_polygon(polygon, point):
+                C[0,i] = -2 * np.pi  # if z--> -0
+            else:
+                C[0,i] = 0
+            
+    B = - 1/(4 * np.pi) * B
+    C = - 1/(4 * np.pi) * C
+        
+    return B, C
+
 import numpy as np
 from math import sqrt, log, atan, tan
 

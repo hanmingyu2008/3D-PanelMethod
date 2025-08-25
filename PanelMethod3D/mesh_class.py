@@ -13,14 +13,14 @@ from copy import deepcopy
 
 class Mesh:
     
-    def __init__(self, nodes:list, shells:list,
+    def __init__(self, nodes:list, shells:list,cal_neighbour=False
                  ):
         self.nodes = nodes
         self.shells = shells
         self.node_num = len(nodes)
         self.shell_num = len(shells)
-
-        self.shell_neighbours = self.locate_shells_adjacency()
+        if cal_neighbour:
+            self.shell_neighbours = self.locate_shells_adjacency()
         # self.shell_neighbours2 = self.locate_shells_adjacency2()
         
     
@@ -127,11 +127,13 @@ class Mesh:
         return Mesh(newnodes,shells)
                           
 class PanelMesh(Mesh):
-    def __init__(self, nodes:list, shells:list):
-        super().__init__(nodes, shells)
+    def __init__(self, nodes:list, shells:list, cal_neighbour = False):
+        super().__init__(nodes, shells, cal_neighbour)
         self.panels = None
         self.panels_num = None
-        self.panel_neighbours = self.shell_neighbours
+        self.cal_neighbour = cal_neighbour
+        if cal_neighbour:
+            self.panel_neighbours = self.shell_neighbours
         # self.panel_neighbours2 = self.shell_neighbours2
         # self.non_zero_panel = []
         self.CreatePanels()         

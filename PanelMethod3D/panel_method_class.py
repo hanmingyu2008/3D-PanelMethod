@@ -1,7 +1,6 @@
 import numpy as np
 from PanelMethod3D.vector_class import Vector
-from PanelMethod3D.disturbance_velocity_functions import Dblt_disturb_velocity,Src_disturb_velocity,Vrtx_ring_induced_veloctiy
-from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_influence_coeff,compute_source_grouppanel_velocity
+from PanelMethod3D.influence_coefficient_functions import influence_coeff,Dblt_influence_coeff,compute_source_grouppanel_velocity,influence_group_coeff
 from PanelMethod3D.influence_coefficient_functions import compute_source_panel_velocity,compute_dipole_panel_velocity
 from PanelMethod3D.mesh_class import PanelMesh,PanelAeroMesh
 from PanelMethod3D.LSQ import LeastSquares,lsq
@@ -95,6 +94,35 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
             panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
         time2 = time.time()
         print(f"Computing Velocity Completed, time cost: {time2 - time1:.2f}")
+    
+    def solve2_group(self, mesh:PanelMesh):
+        time1 = time.time()
+        C,RHS = self.influence_coeff_group_matrices(mesh,self.V_fs)
+        time2 = time.time()
+        print(f"Constructing Matrix and RHS Completed, time cost: {time2 - time1:.2f}",flush=True)
+
+        time1 = time.time()
+        doublet_strengths = np.linalg.solve(C, RHS)
+        time2 = time.time()
+        print(f"Solving Linear Equation Completed, time cost: {time2 - time1:.2f}",flush=True)
+        
+        for panel_id, panel in enumerate(mesh.panels):
+            panel.mu = doublet_strengths[panel_id]
+        
+        V_fs_norm = self.V_fs.norm()
+        time1 = time.time()
+        for panel in mesh.panels:
+            ## 速度计算方法
+            # 把所有公共边邻居当中，法向量夹角比较小的三个(相当于是在曲面上还算平滑的几个邻居)取出来
+            # 同样是对三个维度进行最小二乘法，但是使用优秀的自己编写的lsq函数。
+            # 其实这个方法相对于前面的solve可能相对优胜一点，最起码可以把plane求解的不错。
+            # 但是对于其他的问题不好保障欸
+            panel_neighbours = mesh.give_neighbours3(panel, 3)
+            panel.Velocity = panel_velocity3(panel, panel_neighbours, self.V_fs, rcond = 1e-2)
+            
+            panel.Cp = 1 - (panel.Velocity.norm()/V_fs_norm)**2 
+        time2 = time.time()
+        print(f"Computing Velocity Completed, time cost: {time2 - time1:.2f}")
 
     def solve_newvelo(self, mesh:PanelMesh): # 这个函数还没有改对！！！不要使用！！！
         # 这个函数的B,C和其他的几个并不一样，完全仿照二维的panel method进行的
@@ -153,6 +181,29 @@ class Steady_Wakeless_PanelMethod(PanelMethod): # 或许什么时候我们会把
                 r_local = (r_cp - panel_j.r_cp).transformation(panel_j.R)
                 
         return B, C
+    @staticmethod
+    def influence_coeff_group_matrices(mesh:PanelMesh, V_fs:Vector):
+        Coor = np.zeros((3,mesh.panels_num))
+        Eta = np.zeros((3,mesh.panels_num))
+        for i,panel in enumerate(mesh.panels):
+            Coor[0,i] = panel.r_cp.x
+            Coor[1,i] = panel.r_cp.y
+            Coor[2,i] = panel.r_cp.z
+            Eta[0,i] = panel.n.x
+            Eta[1,i] = panel.n.y
+            Eta[2,i] = panel.n.z
+        B = np.zeros((mesh.panels_num,mesh.panels_num))
+        C = np.zeros((mesh.panels_num,mesh.panels_num))
+        for i,panel in enumerate(mesh.panels):
+            B[:,i],C[:,i] = influence_group_coeff(Coor, panel)
+        
+        source_strength = - V_fs.x * Eta[0] - V_fs.y * Eta[1] - V_fs.z * Eta[2]
+        
+        rhs = - B @ source_strength.T
+        for i in range(mesh.panels_num):
+            mesh.panels[i].sigma = source_strength[i]
+        
+        return C,rhs
     
     @staticmethod
     def influence_velocoeff_matrices(panels):
